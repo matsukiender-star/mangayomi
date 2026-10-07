@@ -349,8 +349,8 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/desktop_webview_window"
-      ref: "aafb447d739fd27e81b2ca4bc667138568c96ac0"
-      resolved-ref: "aafb447d739fd27e81b2ca4bc667138568c96ac0"
+      ref: "17dde86348e6f7d323775ba7be30f37efae6124c"
+      resolved-ref: "17dde86348e6f7d323775ba7be30f37efae6124c"
       url: "https://github.com/matsukiender-star/desktop_webview_window.git"
     source: git
     version: "0.3.0"
