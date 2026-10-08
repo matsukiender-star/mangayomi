@@ -112,7 +112,10 @@ class _MangaWebViewState extends ConsumerState<MangaWebView> {
       // webview window: the plugin's own title bar is a second Flutter engine,
       // and tearing it down when the window closes crashes the app.
       _desktopWebview = await WebviewWindow.create(
-        configuration: CreateConfiguration(titleBarHeight: 0),
+        configuration: CreateConfiguration(
+          title: widget.title,
+          titleBarHeight: 0,
+        ),
       );
       final navigating = _desktopWebview!.isNavigating;
       navigating.addListener(() {
@@ -128,7 +131,8 @@ class _MangaWebViewState extends ConsumerState<MangaWebView> {
           }
         })
         ..setOnUrlRequestCallback((url) {
-          if (mounted) setState(() => _url = url);
+          // The window starts on about:blank before loading the source.
+          if (mounted && url != 'about:blank') setState(() => _url = url);
           return true;
         });
 
