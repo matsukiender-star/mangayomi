@@ -86,7 +86,7 @@ dependencies:
     git:
       url: https://github.com/matsukiender-star/desktop_webview_window.git
       path: packages/desktop_webview_window
-      ref: b04869c945668b98de3a4d33a982dbae980007c6
+      ref: dd8bfc6b9d9229a19f86569de628dd517f78c610
   screen_brightness: ^2.1.1
   flutter_html: ^3.0.0
   convert: ^3.1.2
