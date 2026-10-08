@@ -108,7 +108,29 @@ class _MangaWebViewState extends ConsumerState<MangaWebView> {
       ua = null;
     }
     if (Platform.isLinux) {
-      _desktopWebview = await WebviewWindow.create();
+      // Like Windows, the controls live in this screen rather than in the
+      // webview window: the plugin's own title bar is a second Flutter engine,
+      // and tearing it down when the window closes crashes the app.
+      _desktopWebview = await WebviewWindow.create(
+        configuration: CreateConfiguration(titleBarHeight: 0),
+      );
+      final navigating = _desktopWebview!.isNavigating;
+      navigating.addListener(() {
+        if (mounted) setState(() => _progress = navigating.value ? 0 : 1);
+      });
+      _desktopWebview!
+        ..setOnHistoryChangedCallback((canGoBack, canGoForward) {
+          if (mounted) {
+            setState(() {
+              _canGoback = canGoBack;
+              _canGoForward = canGoForward;
+            });
+          }
+        })
+        ..setOnUrlRequestCallback((url) {
+          if (mounted) setState(() => _url = url);
+          return true;
+        });
 
       _cookieTimer = Timer.periodic(const Duration(seconds: 1), (_) async {
         try {
@@ -121,7 +143,7 @@ class _MangaWebViewState extends ConsumerState<MangaWebView> {
           final cookie = cookieList
               .map((e) => "${e.name}=${e.value}")
               .join(";");
-          await MClient.setCookie(_url, ua, null, cookie: cookie);
+          await MClient.setCookie(widget.url, ua, null, cookie: cookie);
         } catch (_) {}
       });
       _desktopWebview!
@@ -186,237 +208,245 @@ class _MangaWebViewState extends ConsumerState<MangaWebView> {
   @override
   Widget build(BuildContext context) {
     final l10n = l10nLocalizations(context);
-    return (!isNotWebviewWindow && Platform.isLinux)
-        ? Scaffold(
-            appBar: AppBar(
-              title: Text(
-                _title,
-                style: const TextStyle(
-                  overflow: TextOverflow.ellipsis,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              leading: IconButton(
-                onPressed: () {
-                  _closeDesktopWebview();
-                  _popWebviewRoute();
-                },
-                icon: const Icon(Icons.close),
-              ),
-            ),
-          )
-        : Material(
-            child: SafeArea(
-              child: PopScope(
-                canPop: false,
-                onPopInvokedWithResult: (didPop, result) async {
-                  if (didPop) return;
-                  final canGoback = await _webViewController?.canGoBack();
-                  if (canGoback ?? false) {
-                    _webViewController?.goBack();
-                  } else if (context.mounted) {
-                    context.pop();
-                  }
-                },
-                child: Column(
+    return Material(
+      child: SafeArea(
+        child: PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            final canGoback = await _webViewController?.canGoBack();
+            if (canGoback ?? false) {
+              _webViewController?.goBack();
+            } else if (context.mounted) {
+              context.pop();
+            }
+          },
+          child: Column(
+            children: [
+              SizedBox(
+                height: AppBar().preferredSize.height,
+                child: Row(
                   children: [
-                    SizedBox(
-                      height: AppBar().preferredSize.height,
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: ListTile(
-                              dense: true,
-                              subtitle: Text(
-                                _url,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              title: Text(
-                                _title,
-                                style: const TextStyle(
-                                  overflow: TextOverflow.ellipsis,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              leading: IconButton(
-                                onPressed: () {
-                                  if (Platform.isWindows) {
-                                    _closeBrowser();
-                                  }
-                                  Navigator.pop(context);
-                                },
-                                icon: const Icon(Icons.close),
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_back,
-                              color: _canGoback ? null : Theme.of(context).disabledColor,
-                            ),
-                            onPressed: _canGoback
-                                ? () {
-                                    _webViewController?.goBack();
-                                  }
-                                : null,
-                          ),
-                          IconButton(
-                            icon: Icon(
-                              Icons.arrow_forward,
-                              color: _canGoForward ? null : Theme.of(context).disabledColor,
-                            ),
-                            onPressed: _canGoForward
-                                ? () {
-                                    _webViewController?.goForward();
-                                  }
-                                : null,
-                          ),
-                          PopupMenuButton(
-                            popUpAnimationStyle: popupAnimationStyle,
-                            itemBuilder: (context) {
-                              return [
-                                PopupMenuItem<int>(
-                                  value: 0,
-                                  child: Text(l10n!.refresh),
-                                ),
-                                PopupMenuItem<int>(
-                                  value: 1,
-                                  child: Text(l10n.share),
-                                ),
-                                PopupMenuItem<int>(
-                                  value: 2,
-                                  child: Text(l10n.open_in_browser),
-                                ),
-                                PopupMenuItem<int>(
-                                  value: 3,
-                                  child: Text(l10n.clear_cookie),
-                                ),
-                              ];
-                            },
-                            onSelected: (value) async {
-                              if (value == 0) {
-                                _webViewController?.reload();
-                              } else if (value == 1) {
-                                final box =
-                                    context.findRenderObject() as RenderBox?;
-                                shareOrCopy(
-                                  ShareParams(
-                                    text: _url,
-                                    sharePositionOrigin:
-                                        box!.localToGlobal(Offset.zero) &
-                                        box.size,
-                                  ),
-                                );
-                              } else if (value == 2) {
-                                await InAppBrowser.openWithSystemBrowser(
-                                  url: WebUri(_url),
-                                );
-                              } else if (value == 3) {
-                                CookieManager.instance().deleteAllCookies();
-                                MClient.deleteAllCookies(_url);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                    ),
-                    _progress < 1.0
-                        ? LinearProgressIndicator(value: _progress)
-                        : Container(),
-                    if (!Platform.isWindows)
-                      Expanded(
-                        // Android's WebView drives its own d-pad focus once it
-                        // has focus, but nothing here ever gave it any, so on a
-                        // TV the remote could not reach into the page at all.
-                        // That matters most for a Cloudflare challenge, which
-                        // is the whole reason this screen exists. Autofocus it
-                        // on TV so the keys land in the page rather than the
-                        // toolbar.
-                        child: Focus(
-                          autofocus: isTv,
-                          child: InAppWebView(
-                            webViewEnvironment: webViewEnvironment,
-                            onWebViewCreated: (controller) async {
-                              _webViewController = controller;
-                            },
-                            onLoadStart: (controller, url) async {
-                              setState(() {
-                                _url = url.toString();
-                              });
-                            },
-                            shouldOverrideUrlLoading:
-                                (controller, navigationAction) async {
-                                  var uri = navigationAction.request.url!;
-                                  if (![
-                                    "http",
-                                    "https",
-                                    "file",
-                                    "chrome",
-                                    "data",
-                                    "javascript",
-                                    "about",
-                                  ].contains(uri.scheme)) {
-                                    if (await canLaunchUrl(uri)) {
-                                      await launchUrl(uri);
-                                      return NavigationActionPolicy.CANCEL;
-                                    }
-                                  }
-                                  return NavigationActionPolicy.ALLOW;
-                                },
-                            onLoadStop: (controller, url) async {
-                              if (mounted) {
-                                setState(() {
-                                  _url = url.toString();
-                                });
-                              }
-                            },
-                            onProgressChanged: (controller, progress) async {
-                              if (mounted) {
-                                setState(() {
-                                  _progress = progress / 100;
-                                });
-                              }
-                            },
-                            onUpdateVisitedHistory:
-                                (controller, url, isReload) async {
-                                  final ua =
-                                      await controller.evaluateJavascript(
-                                        source: "navigator.userAgent",
-                                      ) ??
-                                      "";
-                                  await MClient.setCookie(
-                                    url.toString(),
-                                    ua,
-                                    controller,
-                                  );
-                                  final canGoback = await controller
-                                      .canGoBack();
-                                  final canGoForward = await controller
-                                      .canGoForward();
-                                  final title = await controller.getTitle();
-                                  if (mounted) {
-                                    setState(() {
-                                      _url = url.toString();
-                                      _title = title!;
-                                      _canGoback = canGoback;
-                                      _canGoForward = canGoForward;
-                                    });
-                                  }
-                                },
-                            initialUrlRequest: URLRequest(
-                              url: WebUri(widget.url),
-                            ),
+                    Expanded(
+                      child: ListTile(
+                        dense: true,
+                        subtitle: Text(
+                          _url,
+                          style: const TextStyle(
+                            fontSize: 10,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
+                        title: Text(
+                          _title,
+                          style: const TextStyle(
+                            overflow: TextOverflow.ellipsis,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        leading: IconButton(
+                          onPressed: () {
+                            if (Platform.isLinux) {
+                              _closeDesktopWebview();
+                              _popWebviewRoute();
+                              return;
+                            }
+                            if (Platform.isWindows) {
+                              _closeBrowser();
+                            }
+                            Navigator.pop(context);
+                          },
+                          icon: const Icon(Icons.close),
+                        ),
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_back,
+                        color: _canGoback
+                            ? null
+                            : Theme.of(context).disabledColor,
+                      ),
+                      onPressed: _canGoback
+                          ? () {
+                              if (Platform.isLinux) {
+                                _desktopWebview?.back();
+                              } else {
+                                _webViewController?.goBack();
+                              }
+                            }
+                          : null,
+                    ),
+                    IconButton(
+                      icon: Icon(
+                        Icons.arrow_forward,
+                        color: _canGoForward
+                            ? null
+                            : Theme.of(context).disabledColor,
+                      ),
+                      onPressed: _canGoForward
+                          ? () {
+                              if (Platform.isLinux) {
+                                _desktopWebview?.forward();
+                              } else {
+                                _webViewController?.goForward();
+                              }
+                            }
+                          : null,
+                    ),
+                    PopupMenuButton(
+                      popUpAnimationStyle: popupAnimationStyle,
+                      itemBuilder: (context) {
+                        return [
+                          PopupMenuItem<int>(
+                            value: 0,
+                            child: Text(l10n!.refresh),
+                          ),
+                          PopupMenuItem<int>(value: 1, child: Text(l10n.share)),
+                          PopupMenuItem<int>(
+                            value: 2,
+                            child: Text(l10n.open_in_browser),
+                          ),
+                          PopupMenuItem<int>(
+                            value: 3,
+                            child: Text(l10n.clear_cookie),
+                          ),
+                        ];
+                      },
+                      onSelected: (value) async {
+                        if (value == 0) {
+                          if (Platform.isLinux) {
+                            _desktopWebview?.reload();
+                          } else {
+                            _webViewController?.reload();
+                          }
+                        } else if (value == 1) {
+                          final box = context.findRenderObject() as RenderBox?;
+                          shareOrCopy(
+                            ShareParams(
+                              text: _url,
+                              sharePositionOrigin:
+                                  box!.localToGlobal(Offset.zero) & box.size,
+                            ),
+                          );
+                        } else if (value == 2) {
+                          // flutter_inappwebview has no Linux support.
+                          if (Platform.isLinux) {
+                            await launchUrl(
+                              Uri.parse(_url),
+                              mode: LaunchMode.externalApplication,
+                            );
+                          } else {
+                            await InAppBrowser.openWithSystemBrowser(
+                              url: WebUri(_url),
+                            );
+                          }
+                        } else if (value == 3) {
+                          if (Platform.isLinux) {
+                            await WebviewWindow.clearAll();
+                          } else {
+                            CookieManager.instance().deleteAllCookies();
+                          }
+                          MClient.deleteAllCookies(_url);
+                        }
+                      },
+                    ),
                   ],
                 ),
               ),
-            ),
-          );
+              _progress < 1.0
+                  ? LinearProgressIndicator(
+                      value: Platform.isLinux ? null : _progress,
+                    )
+                  : Container(),
+              if (isNotWebviewWindow)
+                Expanded(
+                  // Android's WebView drives its own d-pad focus once it
+                  // has focus, but nothing here ever gave it any, so on a
+                  // TV the remote could not reach into the page at all.
+                  // That matters most for a Cloudflare challenge, which
+                  // is the whole reason this screen exists. Autofocus it
+                  // on TV so the keys land in the page rather than the
+                  // toolbar.
+                  child: Focus(
+                    autofocus: isTv,
+                    child: InAppWebView(
+                      webViewEnvironment: webViewEnvironment,
+                      onWebViewCreated: (controller) async {
+                        _webViewController = controller;
+                      },
+                      onLoadStart: (controller, url) async {
+                        setState(() {
+                          _url = url.toString();
+                        });
+                      },
+                      shouldOverrideUrlLoading:
+                          (controller, navigationAction) async {
+                            var uri = navigationAction.request.url!;
+                            if (![
+                              "http",
+                              "https",
+                              "file",
+                              "chrome",
+                              "data",
+                              "javascript",
+                              "about",
+                            ].contains(uri.scheme)) {
+                              if (await canLaunchUrl(uri)) {
+                                await launchUrl(uri);
+                                return NavigationActionPolicy.CANCEL;
+                              }
+                            }
+                            return NavigationActionPolicy.ALLOW;
+                          },
+                      onLoadStop: (controller, url) async {
+                        if (mounted) {
+                          setState(() {
+                            _url = url.toString();
+                          });
+                        }
+                      },
+                      onProgressChanged: (controller, progress) async {
+                        if (mounted) {
+                          setState(() {
+                            _progress = progress / 100;
+                          });
+                        }
+                      },
+                      onUpdateVisitedHistory:
+                          (controller, url, isReload) async {
+                            final ua =
+                                await controller.evaluateJavascript(
+                                  source: "navigator.userAgent",
+                                ) ??
+                                "";
+                            await MClient.setCookie(
+                              url.toString(),
+                              ua,
+                              controller,
+                            );
+                            final canGoback = await controller.canGoBack();
+                            final canGoForward = await controller
+                                .canGoForward();
+                            final title = await controller.getTitle();
+                            if (mounted) {
+                              setState(() {
+                                _url = url.toString();
+                                _title = title!;
+                                _canGoback = canGoback;
+                                _canGoForward = canGoForward;
+                              });
+                            }
+                          },
+                      initialUrlRequest: URLRequest(url: WebUri(widget.url)),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }
 
