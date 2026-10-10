@@ -45,12 +45,36 @@ class WebtoonScaleGestureRecognizer extends ScaleGestureRecognizer {
     super.resolve(resolveDisposition(disposition));
   }
 
+  /// How far a pointer must move, while zoomed, before the pan claims the
+  /// gesture. Under the list's own drag slop, so a zoomed page pans instead
+  /// of the list scrolling, but above the jitter of a tap, so a double tap
+  /// can still reset the zoom.
+  static const double zoomedPanSlop = kTouchSlop / 2;
+
+  final Map<int, Offset> _pointerDownAt = {};
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    _pointerDownAt[event.pointer] = event.position;
+    super.addAllowedPointer(event);
+  }
+
   @override
   void handleEvent(PointerEvent event) {
     if (event is PointerMoveEvent && canPanCallback?.call() == true) {
-      resolve(GestureDisposition.accepted);
+      final downAt = _pointerDownAt[event.pointer];
+      if (downAt != null &&
+          (event.position - downAt).distance > zoomedPanSlop) {
+        resolve(GestureDisposition.accepted);
+      }
     }
     super.handleEvent(event);
+  }
+
+  @override
+  void stopTrackingPointer(int pointer) {
+    _pointerDownAt.remove(pointer);
+    super.stopTrackingPointer(pointer);
   }
 }
 
@@ -556,9 +580,7 @@ class _ImageViewWebtoonState extends ConsumerState<ImageViewWebtoon>
       item = _buildDoublePageItem(context, index, singleFirst);
     } else {
       final currentPage = widget.pages[index];
-      final uniqueKey = ValueKey(
-        '${currentPage.chapter?.id ?? "trans"}-${currentPage.index ?? index}',
-      );
+      final uniqueKey = ValueKey(currentPage.widgetKey(index));
 
       item = KeyedSubtree(
         key: uniqueKey,
@@ -608,9 +630,7 @@ class _ImageViewWebtoonState extends ConsumerState<ImageViewWebtoon>
       rotation = dualPageRotateToFitInvert ? 270 : 90;
     }
 
-    final uniqueKey = ValueKey(
-      'single-${currentPage.chapter?.id ?? "trans"}-${currentPage.index ?? index}',
-    );
+    final uniqueKey = ValueKey('single-${currentPage.widgetKey(index)}');
 
     return Padding(
       key: uniqueKey,
@@ -663,7 +683,7 @@ class _ImageViewWebtoonState extends ConsumerState<ImageViewWebtoon>
     final List<UChapDataPreload?> datas = [page1, page2];
 
     final uniqueKey = ValueKey(
-      'double-${page1.chapter?.id ?? "trans"}-${page1.index ?? index1}-${page2?.index ?? "none"}',
+      'double-${page1.widgetKey(index1)}-${page2?.widgetKey(index1 + 1) ?? "none"}',
     );
 
     return KeyedSubtree(

@@ -502,10 +502,19 @@
   "description": "Description",
   "reorder_navigation": "Customize navigation",
   "reorder_navigation_description": "Reorder and toggle each navigation to your needs.",
+  "floating_navigation_bar": "Floating navigation bar",
+  "floating_navigation_bar_description": "Use a floating capsule instead of the standard attached navigation bar.",
   "full_screen_player": "Use Fullscreen",
   "full_screen_player_info": "Automatically use fullscreen when playing a video.",
   "episode_progress": "Progress: {n}",
-  "n_episodes": "{n} episodes",
+  "n_episodes": "{n, plural, =1 {1 episode} other {{n} episodes}}",
+  "@n_episodes": {
+    "placeholders": {
+      "n": {
+        "type": "int"
+      }
+    }
+  },
   "missing_episodes": "Missing {count} episodes",
   "manga_sources": "Manga Sources",
   "anime_sources": "Anime Sources",
@@ -751,6 +760,8 @@
   "repo_added": "Source repository added!",
   "repo_already_exists": "Repository already exists!",
   "add_repo": "Add Repository?",
+  "add_repo_sources_to_add": "Extension lists that will be added:",
+  "add_repo_warning": "Extensions from these repositories run inside the app. Only add repositories you trust.",
   "genre_search_library": "Search genre in library",
   "genre_search_source": "Browse in source",
   "source_not_added": "Source is not installed!",
@@ -796,6 +807,7 @@
   "custom_buttons_js_code_req": "lua code required",
   "custom_buttons_js_code_long": "lua code (on long press)",
   "custom_buttons_startup": "lua code (on startup)",
+  "custom_buttons_add_warning": "This button runs the Lua code below in the video player, which can access your files and run programs. Only add it if you trust where this link came from.",
   "n_days": "{n} days",
   "decoder": "Decoder",
   "decoder_info": "Hardware decoding, pixel format, debanding",
@@ -828,9 +840,79 @@
   "clear_library_desc": "Choose to clear all manga, anime and/or novel entries",
   "clear_library_input": "Type 'manga', 'anime' and/or 'novel' (separated by a comma) to remove all related entries",
   "watch_order": "Watch order",
+  "watch_order_role_current": "Current",
+  "@watch_order_role_current": {
+    "description": "Role label for the title currently being viewed in a watch order."
+  },
+  "watch_order_role_previous": "Previous",
+  "@watch_order_role_previous": {
+    "description": "Role label for an earlier title in a watch order."
+  },
+  "watch_order_role_next": "Next",
+  "@watch_order_role_next": {
+    "description": "Role label for a later title in a watch order."
+  },
+  "watch_order_source_release_order": "Release order",
+  "@watch_order_source_release_order": {
+    "description": "Source label for a watch order based on release dates."
+  },
+  "watch_order_source_community_list": "{name} by {author}",
+  "@watch_order_source_community_list": {
+    "description": "Source label for a community-created Trakt list.",
+    "placeholders": {
+      "name": {"type": "String"},
+      "author": {"type": "String"}
+    }
+  },
+  "watch_order_source_official_collection": "Official Trakt collection: {name}",
+  "@watch_order_source_official_collection": {
+    "description": "Source label for an official Trakt collection.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "watch_order_source_trakt_collection": "Trakt collection: {name}",
+  "@watch_order_source_trakt_collection": {
+    "description": "Source label for a Trakt collection when it is not marked as official.",
+    "placeholders": {
+      "name": {"type": "String"}
+    }
+  },
+  "watch_order_source_seasons": "Seasons for {title}",
+  "@watch_order_source_seasons": {
+    "description": "Fallback source label when the watch order contains a show's seasons.",
+    "placeholders": {
+      "title": {"type": "String"}
+    }
+  },
+  "watch_order_select_source": "Order source",
+  "@watch_order_select_source": {
+    "description": "Label for choosing among available watch-order sources."
+  },
+  "watch_order_season": "Season {number}",
+  "@watch_order_season": {
+    "description": "Season metadata shown in a watch order.",
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
+  "watch_order_episode": "Episode {number}",
+  "@watch_order_episode": {
+    "description": "Episode metadata shown in a watch order.",
+    "placeholders": {
+      "number": {"type": "int"}
+    }
+  },
   "sequels": "Sequels",
   "recommendations": "Recommendations",
   "recommendations_similarity": "Similarity:",
+  "recommendation_rating_accessibility": "Rating {rating}",
+  "@recommendation_rating_accessibility": {
+    "description": "Accessible label for a recommendation rating in the provider's display format.",
+    "placeholders": {
+      "rating": {"type": "String"}
+    }
+  },
   "local_folder_structure": "Structure of a local folder",
   "local_folder": "Local folders",
   "add_local_folder": "Add local folder",
@@ -1345,5 +1427,65 @@
   "chapter_swipe_toggle_bookmark": "Toggle bookmark",
   "chapter_swipe_toggle_read": "Toggle read",
   "chapter_swipe_download": "Download",
-  "chapter_swipe_disabled": "Disabled"
+  "chapter_swipe_disabled": "Disabled",
+  "update_errors": "Update errors",
+  "no_update_errors": "No update errors",
+  "clear_all": "Clear all",
+  "dismiss": "Dismiss",
+  "previous_episode": "Previous episode",
+  "clear_logs": "Clear logs",
+  "bold": "Bold",
+  "italic": "Italic",
+  "color_yellow": "Yellow",
+  "color_cyan": "Cyan",
+  "color_green": "Green",
+  "color_orange": "Orange",
+  "continue_watching": "Continue Watching",
+  "search_your_anime": "Search your anime",
+  "category": "Category",
+  "hidden_categories": "Hidden categories",
+  "new_category": "New category",
+  "local": "Local",
+  "tv_home_rows": "Rows",
+  "genre_rows": "Genre rows",
+  "share_backup_file": "Share Mangayomi backup file",
+  "close": "Close",
+  "migrate_source": "Migrate source",
+  "cloudflare_bypass_proxy": "Cloudflare bypass proxy",
+  "custom_doh_url": "Custom DoH URL",
+  "custom_doh_url_helper": "Must be an https DoH (JSON) endpoint",
+  "anime_only_tv_layout": "Anime-only TV layout",
+  "anime_only_beta": "Anime only (beta)",
+  "tv_home_beta": "TV home (beta)",
+  "tv_player_beta": "TV player (beta)",
+  "keyboard_shortcuts": "Keyboard shortcuts",
+  "keyboard_shortcuts_info": "Keys for the reader and the player",
+  "shortcut_next_page": "Next page",
+  "shortcut_previous_page": "Previous page",
+  "shortcut_toggle_menu": "Show or hide the menu",
+  "shortcut_close_reader": "Close the reader",
+  "shortcut_play_pause": "Play or pause",
+  "shortcut_seek_back": "Back {seconds} s",
+  "@shortcut_seek_back": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcut_seek_forward": "Forward {seconds} s",
+  "@shortcut_seek_forward": {
+    "placeholders": {
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "shortcut_volume_up": "Volume up",
+  "shortcut_volume_down": "Volume down",
+  "shortcut_mute": "Mute",
+  "shortcut_skip_intro": "Skip intro",
+  "shortcut_exit_fullscreen": "Exit fullscreen",
+  "shortcut_anime4k": "Anime4K shaders (0 turns them off)",
+  "shortcut_show_controls": "Show the controls"
 }

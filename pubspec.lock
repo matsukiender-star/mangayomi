@@ -349,9 +349,9 @@ packages:
     dependency: "direct main"
     description:
       path: "packages/desktop_webview_window"
-      ref: main
-      resolved-ref: "81653aaaa923da75d943513c67f693ccbabeba09"
-      url: "https://github.com/kodjodevf/desktop_webview_window.git"
+      ref: "dd8bfc6b9d9229a19f86569de628dd517f78c610"
+      resolved-ref: "dd8bfc6b9d9229a19f86569de628dd517f78c610"
+      url: "https://github.com/matsukiender-star/desktop_webview_window.git"
     source: git
     version: "0.3.0"
   device_info_plus:
@@ -668,7 +668,7 @@ packages:
     description:
       path: "."
       ref: main
-      resolved-ref: "308ab6245b4e56e33969dde85e7741c50e6e70f5"
+      resolved-ref: b64d2e3a8b2bf3b32ab4c3acef34a11636d5b87f
       url: "https://github.com/kodjodevf/flutter_qjs.git"
     source: git
     version: "0.0.1"
@@ -851,22 +851,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
-  hive:
-    dependency: "direct main"
-    description:
-      name: hive
-      sha256: "8dcf6db979d7933da8217edcec84e9df1bdb4e4edc7fc77dbd5aa74356d6d941"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.2.3"
-  hive_flutter:
-    dependency: "direct main"
-    description:
-      name: hive_flutter
-      sha256: dca1da446b1d808a51689fb5d0c6c9510c0a2ba01e22805d492c73b68e33eecc
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   hooks:
     dependency: "direct main"
     description:

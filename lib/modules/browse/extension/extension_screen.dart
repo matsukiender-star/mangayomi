@@ -76,6 +76,7 @@ class _ExtensionScreenState extends ConsumerState<ExtensionScreen> {
     final showNSFW = ref.watch(showNSFWStateProvider);
 
     final l10n = l10nLocalizations(context)!;
+    final tvHorizontalInset = tvHorizontalSafeInset(context);
 
     return RefreshIndicator(
       onRefresh: _refreshSources,
@@ -83,8 +84,8 @@ class _ExtensionScreenState extends ConsumerState<ExtensionScreen> {
         // Match the sources tab's inset so the two Browse tabs line up on TV.
         padding: EdgeInsets.only(
           top: 10,
-          left: isTv ? 8 : 0,
-          right: isTv ? 8 : 0,
+          left: tvHorizontalInset,
+          right: tvHorizontalInset,
         ),
         child: streamExtensions.when(
           data: (data) {
@@ -123,10 +124,10 @@ class _ExtensionScreenState extends ConsumerState<ExtensionScreen> {
                   isInstalled &&
                   !(element.isObsolete ?? false) &&
                   compareVersions(
-                    element.version ?? '',
-                    element.versionLast ?? '',
-                  ) <
-                  0;
+                        element.version ?? '',
+                        element.versionLast ?? '',
+                      ) <
+                      0;
 
               if (hasUpdate) {
                 updateEntries.add(element);
@@ -155,6 +156,12 @@ class _ExtensionScreenState extends ConsumerState<ExtensionScreen> {
                     _buildInstalledSection(installedEntries, l10n),
                   if (notInstalledEntries.isNotEmpty)
                     _buildNotInstalledSection(notInstalledEntries),
+                  // Trailing room rather than padding around the viewport, so
+                  // rows scroll under the translucent bar (which is what gives
+                  // it something to blur) and only the last one clears it.
+                  SliverToBoxAdapter(
+                    child: SizedBox(height: pageBottomInsets(context).bottom),
+                  ),
                 ],
               ),
             );

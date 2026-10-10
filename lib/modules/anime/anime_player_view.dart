@@ -31,6 +31,7 @@ import 'package:mangayomi/modules/anime/providers/state_provider.dart';
 import 'package:mangayomi/modules/anime/utils/player_lifecycle.dart';
 import 'package:mangayomi/modules/anime/widgets/aniskip_countdown_btn.dart';
 import 'package:mangayomi/modules/anime/widgets/tv_player_controls.dart';
+import 'package:mangayomi/modules/anime/widgets/tv_player_pills.dart';
 import 'package:mangayomi/modules/anime/widgets/tv_player_settings_panel.dart';
 import 'package:mangayomi/modules/main_view/providers/tv_mode_provider.dart';
 import 'package:mangayomi/modules/anime/widgets/desktop.dart';
@@ -42,6 +43,7 @@ import 'package:mangayomi/modules/anime/widgets/subtitle_section_widget.dart';
 import 'package:mangayomi/utils/manga_cover_actions.dart';
 import 'package:mangayomi/modules/manga/reader/widgets/btn_chapter_list_dialog.dart';
 import 'package:mangayomi/modules/anime/widgets/mobile.dart';
+import 'package:mangayomi/modules/anime/widgets/mobile_player_controls_layout.dart';
 import 'package:mangayomi/modules/anime/widgets/subtitle_view.dart';
 import 'package:mangayomi/modules/anime/widgets/unified_settings_sheet.dart';
 import 'package:mangayomi/modules/manga/reader/providers/push_router.dart';
@@ -69,8 +71,11 @@ import 'package:numberpicker/numberpicker.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:super_sliver_list/super_sliver_list.dart';
-import 'package:window_manager/window_manager.dart' show windowManager;
+import 'package:mangayomi/modules/anime/utils/always_on_top.dart';
+import 'package:mangayomi/modules/anime/utils/mpv_subtitle_options.dart';
+import 'package:mangayomi/modules/anime/utils/player_labels.dart';
+import 'package:mangayomi/modules/anime/widgets/player_shortcut_pills.dart';
+import 'package:mangayomi/modules/widgets/image_actions_sheet.dart';
 
 class AnimePlayerView extends riv.ConsumerStatefulWidget {
   final int episodeId;
@@ -247,7 +252,7 @@ bool _firstTime = true;
 
 class _AnimeStreamPageState extends riv.ConsumerState<AnimeStreamPage>
     with
-        _AlwaysOnTopStateMixin,
+        AlwaysOnTopStateMixin,
         TickerProviderStateMixin,
         WidgetsBindingObserver {
   bool _routeExitInProgress = false;
@@ -264,96 +269,12 @@ class _AnimeStreamPageState extends riv.ConsumerState<AnimeStreamPage>
   );
   riv.ProviderSubscription<PlayerSubtitleSettings>? _subSettingsSub;
 
-  static String _toMpvColor(int a, int r, int g, int b) {
-    final hex =
-        ((a & 0xFF) << 24) |
-        ((r & 0xFF) << 16) |
-        ((g & 0xFF) << 8) |
-        (b & 0xFF);
-    return '#${hex.toRadixString(16).padLeft(8, '0').toUpperCase()}';
-  }
-
-  Map<String, String> _getInitialSubtitleOptions() {
-    final subSettings = ref.read(subtitleSettingsStateProvider);
-    final overrideAss = subSettings.overrideAssSubtitles ?? false;
-    return {
-      "sub-font-size": "${subSettings.fontSize ?? 45}",
-      "sub-bold": (subSettings.useBold ?? true) ? "yes" : "no",
-      "sub-italic": (subSettings.useItalic ?? false) ? "yes" : "no",
-      "sub-color": _toMpvColor(
-        subSettings.textColorA ?? 255,
-        subSettings.textColorR ?? 255,
-        subSettings.textColorG ?? 255,
-        subSettings.textColorB ?? 255,
-      ),
-      "sub-border-color": _toMpvColor(
-        subSettings.borderColorA ?? 255,
-        subSettings.borderColorR ?? 0,
-        subSettings.borderColorG ?? 0,
-        subSettings.borderColorB ?? 0,
-      ),
-      "sub-border-size": "3",
-      "sub-back-color": _toMpvColor(
-        subSettings.backgroundColorA ?? 0,
-        subSettings.backgroundColorR ?? 0,
-        subSettings.backgroundColorG ?? 0,
-        subSettings.backgroundColorB ?? 0,
-      ),
-      "sub-shadow-offset": "0",
-      "sub-pos": "100",
-      "sub-scale": "1.0",
-      "sub-ass-override": overrideAss ? "force" : "scale",
-      if (overrideAss) "sub-ass-justify": "yes",
-    };
-  }
-
   void _applySubtitleSettingsToMpv(PlayerSubtitleSettings settings) {
     if (!useLibass) return;
     try {
       final nativePlayer = _player.platform as NativePlayer;
-      nativePlayer.setProperty("sub-font-size", "${settings.fontSize ?? 45}");
-      nativePlayer.setProperty(
-        "sub-bold",
-        (settings.useBold ?? true) ? "yes" : "no",
-      );
-      nativePlayer.setProperty(
-        "sub-italic",
-        (settings.useItalic ?? false) ? "yes" : "no",
-      );
-      nativePlayer.setProperty(
-        "sub-color",
-        _toMpvColor(
-          settings.textColorA ?? 255,
-          settings.textColorR ?? 255,
-          settings.textColorG ?? 255,
-          settings.textColorB ?? 255,
-        ),
-      );
-      nativePlayer.setProperty(
-        "sub-border-color",
-        _toMpvColor(
-          settings.borderColorA ?? 255,
-          settings.borderColorR ?? 0,
-          settings.borderColorG ?? 0,
-          settings.borderColorB ?? 0,
-        ),
-      );
-      nativePlayer.setProperty(
-        "sub-back-color",
-        _toMpvColor(
-          settings.backgroundColorA ?? 0,
-          settings.backgroundColorR ?? 0,
-          settings.backgroundColorG ?? 0,
-          settings.backgroundColorB ?? 0,
-        ),
-      );
-      final overrideAss = settings.overrideAssSubtitles ?? false;
-      nativePlayer.setProperty(
-        "sub-ass-override",
-        overrideAss ? "force" : "scale",
-      );
-      if (overrideAss) {
-        nativePlayer.setProperty("sub-ass-justify", "yes");
+      for (final MapEntry(:key, :value) in mpvSubtitleStyle(settings).entries) {
+        nativePlayer.setProperty(key, value);
       }
     } catch (_) {}
   }
@@ -376,7 +297,8 @@ class _AnimeStreamPageState extends riv.ConsumerState<AnimeStreamPage>
           "audio-channels": audioChannel.mpvName,
         if (audioChannel == AudioChannel.reverseStereo)
           "af": audioChannel.mpvName,
-        if (useLibass) ..._getInitialSubtitleOptions(),
+        if (useLibass)
+          ...mpvInitialSubtitleOptions(ref.read(subtitleSettingsStateProvider)),
       },
       observeProperties: {
         "user-data/aniyomi/show_text": generated.mpv_format.MPV_FORMAT_NODE,
@@ -1904,7 +1826,7 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
         icon: Icons.fit_screen_outlined,
         valueBuilder: (context) => ValueListenableBuilder<BoxFit>(
           valueListenable: _fit,
-          builder: (context, fit, _) => Text(_fitShortLabel(fit)),
+          builder: (context, fit, _) => Text(fitShortLabel(fit)),
         ),
         contentBuilder: (context) => _fitSectionWidget(context),
       ),
@@ -1937,6 +1859,16 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
           label: context.l10n.custom_buttons,
           icon: Icons.terminal_outlined,
           contentBuilder: (context) => _customButtonsSectionWidget(context),
+        ),
+      if (_usesCompactPortraitControls(context))
+        SettingsEntry(
+          label: context.l10n.share,
+          icon: Icons.adaptive.share,
+          onTap: (sheetContext) {
+            unawaited(
+              _showShareScreenshotActions(sheetContext, widget.episode),
+            );
+          },
         ),
     ];
   }
@@ -2025,7 +1957,7 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
   Widget _fitSectionWidget(BuildContext context) {
     return FitSectionWidget(
       fit: _fit,
-      fitLabel: _fitShortLabel,
+      fitLabel: fitShortLabel,
       onSelect: (fit) {
         _fit.value = fit;
         _key.currentState?.update(fit: fit);
@@ -2216,35 +2148,53 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     );
   }
 
-  Widget _seekToWidget() {
+  Widget _seekToWidget({bool iconOnly = false}) {
     final defaultSkipIntroLength = ref.watch(
       defaultSkipIntroLengthStateProvider,
     );
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
-      child: SizedBox(
-        height: 35,
-        child: ValueListenableBuilder(
-          valueListenable: _customButton,
-          builder: (context, value, child) => (value?.visible ?? true)
-              ? ElevatedButton(
-                  onPressed:
-                      value?.onPress ??
-                      () async => await _seekBy(defaultSkipIntroLength),
-                  onLongPress: value?.onLongPress,
-                  child: Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: Text(
-                      value != null
-                          ? value.currentTitle
-                          : "+$defaultSkipIntroLength",
-                      style: const TextStyle(fontWeight: FontWeight.w100),
-                    ),
-                  ),
-                )
-              : Container(),
-        ),
-      ),
+    return ValueListenableBuilder(
+      valueListenable: _customButton,
+      builder: (context, value, child) {
+        if (!(value?.visible ?? true)) return const SizedBox.shrink();
+
+        final label = value?.currentTitle ?? "+$defaultSkipIntroLength";
+        void onPressed() {
+          if (value != null) {
+            value.onPress();
+          } else {
+            unawaited(_seekBy(defaultSkipIntroLength));
+          }
+        }
+
+        final onLongPress = value == null ? null : () => value.onLongPress();
+        if (iconOnly) {
+          return MobilePlayerCompactSeekControl(
+            key: const ValueKey('mobile-player-portrait-seek-button'),
+            tooltip: value?.currentTitle ?? '+$defaultSkipIntroLength seconds',
+            seconds: value == null ? defaultSkipIntroLength : null,
+            onPressed: onPressed,
+            onLongPress: onLongPress,
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5),
+          child: SizedBox(
+            height: 35,
+            child: ElevatedButton(
+              onPressed: onPressed,
+              onLongPress: onLongPress,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Text(
+                  label,
+                  style: const TextStyle(fontWeight: FontWeight.w100),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2256,38 +2206,57 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
   int get _chaptersSectionIndex => 4;
   int get _speedSectionIndex => _chapterMarks.value.isNotEmpty ? 5 : 4;
 
-  Widget _chapterMarkWidget() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
-      child: SizedBox(
-        height: 35,
-        child: ValueListenableBuilder(
-          valueListenable: _currentChapterMark,
-          builder: (context, value, child) => value != null
-              ? Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () => _openPlayerSettings(
-                      context,
-                      initialIndex: _chaptersSectionIndex,
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: Text(
-                        "${_chapterMarks.value[value].$1} - ${Duration(milliseconds: _chapterMarks.value[value].$2).label()}",
-                        style: const TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
+  Widget _chapterMarkWidget({bool iconOnly = false}) {
+    return ValueListenableBuilder(
+      valueListenable: _currentChapterMark,
+      builder: (context, value, child) {
+        if (value == null) return const SizedBox.shrink();
+
+        final chapter = _chapterMarks.value[value];
+        final label =
+            "${chapter.$1} - ${Duration(milliseconds: chapter.$2).label()}";
+        void onPressed() =>
+            _openPlayerSettings(context, initialIndex: _chaptersSectionIndex);
+
+        if (iconOnly) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2.5),
+            child: PlayerPillButton(
+              icon: Icons.bookmark_outline,
+              label: label,
+              showLabel: false,
+              tooltip: label,
+              isCompact: true,
+              onTap: onPressed,
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+          child: SizedBox(
+            height: 35,
+            child: Material(
+              type: MaterialType.transparency,
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onPressed,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
-                )
-              : Container(),
-        ),
-      ),
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -2334,7 +2303,7 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     return [
       for (final video in widget.videos)
         TvTrackOption(
-          label: _shortQuality(video.quality),
+          label: shortQualityLabel(video.quality),
           selected: currentTitle == video.quality,
           onSelect: () {
             if (_video.value?.videoTrack?.title == video.quality) return;
@@ -2352,81 +2321,67 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     ];
   }
 
-  // Shorten a source quality label like "1080p (Sub)" to "1080-sub"/"1080-dub".
-  String _shortQuality(String raw) {
-    final lower = raw.toLowerCase();
-    final res = RegExp(r'(\d{3,4})\s*p?').firstMatch(lower)?.group(1);
-    final tag = lower.contains('sub')
-        ? 'sub'
-        : lower.contains('dub')
-        ? 'dub'
-        : null;
-    if (res != null && tag != null) return '$res-$tag';
-    if (res != null) return '${res}p';
-    return raw;
-  }
-
-  String _shortTrackLabel(String raw) {
-    var trimmed = raw.trim();
-    if (trimmed.isEmpty) return '';
-    if (trimmed.startsWith('[')) {
-      final closing = trimmed.indexOf(']');
-      if (closing > 1) {
-        trimmed = trimmed.substring(1, closing).trim();
-      } else {
-        trimmed = trimmed.substring(1).trim();
-      }
-    } else if (trimmed.startsWith('(')) {
-      final closing = trimmed.indexOf(')');
-      if (closing > 1) {
-        trimmed = trimmed.substring(1, closing).trim();
-      } else {
-        trimmed = trimmed.substring(1).trim();
-      }
-    }
-    final clean = trimmed.split(RegExp(r'[\(\[\-]')).first.trim();
-    final candidate = clean.isNotEmpty ? clean : trimmed;
-    if (candidate.length > 7) {
-      return candidate.substring(0, 6);
-    }
-    return candidate;
+  bool _usesCompactPortraitControls(BuildContext context) {
+    return !isDesktop &&
+        !isTv &&
+        usesCompactPortraitPlayerControls(
+          orientation: MediaQuery.orientationOf(context),
+          width: MediaQuery.sizeOf(context).width,
+        );
   }
 
   Widget _mobileBottomButtonBar(BuildContext context) {
+    final compactPortrait = _usesCompactPortraitControls(context);
     return Padding(
-      padding: const EdgeInsets.only(bottom: 30),
+      padding: const EdgeInsets.only(
+        bottom: mobilePlayerBottomControlsBottomPadding,
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.end,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Row(
-              children: [
-                IconButton(
-                  tooltip: context.l10n.lock,
-                  icon: const Icon(
-                    Icons.lock_open_outlined,
-                    color: Colors.white,
-                  ),
-                  onPressed: () {
-                    HapticFeedback.lightImpact();
-                    _isLocked.value = true;
-                  },
-                ),
-                _seekToWidget(),
-                _chapterMarkWidget(),
-                Expanded(
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    reverse: true,
-                    child: _buildSettingsButtons(context),
-                  ),
-                ),
-              ],
+          MobilePlayerBottomControlsLayout(
+            compactPortrait: compactPortrait,
+            lockButton: IconButton(
+              key: const ValueKey('mobile-player-lock-button'),
+              tooltip: context.l10n.lock,
+              icon: const Icon(
+                Icons.lock_open_outlined,
+                size: mobilePlayerPortraitControlIconSize,
+                color: Colors.white,
+              ),
+              onPressed: () {
+                HapticFeedback.lightImpact();
+                _isLocked.value = true;
+              },
             ),
+            seekButton: _seekToWidget(iconOnly: compactPortrait),
+            chapterButton: compactPortrait
+                ? const SizedBox.shrink()
+                : _chapterMarkWidget(),
+            shortcutButtons: compactPortrait
+                ? _portraitFullscreenButton(context)
+                : _buildSettingsButtons(context),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _portraitFullscreenButton(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, _) {
+        final isFullscreen = ref.watch(fullscreenProvider);
+        return IconButton(
+          key: const ValueKey('mobile-player-portrait-fullscreen'),
+          tooltip: context.l10n.fullscreen,
+          onPressed: () => _toggleFullscreen(isFullscreen),
+          icon: Icon(
+            isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
+            size: mobilePlayerPortraitControlIconSize,
+            color: Colors.white,
+          ),
+        );
+      },
     );
   }
 
@@ -2445,7 +2400,7 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
                   children: [
                     if (_streamController.hasPreviousEpisode)
                       IconButton(
-                        tooltip: 'Previous episode',
+                        tooltip: context.l10n.previous_episode,
                         onPressed: () {
                           pushToNewEpisode(
                             context,
@@ -2460,7 +2415,7 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
                     CustomPlayOrPauseButton(controller: _controller),
                     if (hasNextEpisode)
                       IconButton(
-                        tooltip: 'Next episode',
+                        tooltip: context.l10n.next_episode,
                         onPressed: () async {
                           pushToNewEpisode(
                             context,
@@ -2562,299 +2517,186 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     );
   }
 
-  String _fitShortLabel(BoxFit fit) => switch (fit) {
-    BoxFit.contain => 'Contain',
-    BoxFit.cover => 'Cover',
-    BoxFit.fill => 'Fill',
-    BoxFit.fitHeight => 'Height',
-    BoxFit.fitWidth => 'Width',
-    BoxFit.scaleDown => 'Scale',
-    BoxFit.none => 'None',
-  };
-
   /// helper method for _mobileBottomButtonBar() and _desktopBottomButtonBar()
-  Widget _buildSettingsButtons(BuildContext context) {
-    final hasMultipleVideos = widget.videos.length > 1;
+  Widget _buildSettingsButtons(BuildContext context, {bool iconOnly = false}) =>
+      PlayerShortcutPills(
+        videos: widget.videos,
+        video: _video,
+        player: _player,
+        subtitleTrack: () => _effectiveSubtitleTrack,
+        audioTrack: () => _effectiveAudioTrack,
+        playbackSpeed: _playbackSpeed,
+        fit: _fit,
+        iconOnly: iconOnly,
+        onQuality: (context) =>
+            _openPlayerSettings(context, initialIndex: _qualitySectionIndex),
+        onSubtitles: (context) =>
+            _openPlayerSettings(context, initialIndex: _subtitleSectionIndex),
+        onAudio: (context) =>
+            _openPlayerSettings(context, initialIndex: _audioSectionIndex),
+        onSpeed: (context) =>
+            _openPlayerSettings(context, initialIndex: _speedSectionIndex),
+        onSettings: _openPlayerSettings,
+        onChangeFit: () => _changeFitLabel(ref),
+        onToggleFullscreen: _toggleFullscreen,
+      );
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Quality shortcut pill
-        if (hasMultipleVideos)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 2.5),
-            child: Builder(
-              builder: (context) => ValueListenableBuilder<VideoPrefs?>(
-                valueListenable: _video,
-                builder: (context, videoPrefs, _) {
-                  final rawQuality =
-                      videoPrefs?.videoTrack?.title ??
-                      (widget.videos.isNotEmpty
-                          ? widget.videos.first.quality
-                          : '');
-                  final qualityLabel = _shortQuality(rawQuality);
-                  return PlayerPillButton(
-                    icon: Icons.high_quality,
-                    label: qualityLabel.isNotEmpty ? qualityLabel : null,
-                    tooltip: context.l10n.video_quality,
-                    isCompact: isMobile,
-                    onTap: () => _openPlayerSettings(
-                      context,
-                      initialIndex: _qualitySectionIndex,
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-        // Subtitles CC shortcut pill
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.5),
-          child: Builder(
-            builder: (context) => StreamBuilder<Track>(
-              stream: _player.stream.track,
-              builder: (context, snapshot) {
-                final subTrack = _effectiveSubtitleTrack;
-                final isSubOff = subTrack == null || subTrack.id == 'no';
-                final rawName = subtitleTrackLabel(subTrack);
-                final shortLabel =
-                    (!isSubOff && rawName.isNotEmpty && rawName != 'None')
-                    ? _shortTrackLabel(rawName)
-                    : '';
-
-                return PlayerPillButton(
-                  icon: Icons.subtitles_outlined,
-                  label: !isSubOff && shortLabel.isNotEmpty
-                      ? shortLabel
-                      : 'Off',
-                  tooltip: context.l10n.video_subtitle,
-                  isCompact: isMobile,
-                  onTap: () => _openPlayerSettings(
-                    context,
-                    initialIndex: _subtitleSectionIndex,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-
-        // Audio track shortcut pill (if multiple audio tracks or explicitly set)
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.5),
-          child: Builder(
-            builder: (context) => StreamBuilder<Track>(
-              stream: _player.stream.track,
-              builder: (context, snapshot) {
-                final audioTrack = _effectiveAudioTrack;
-                final isAudioOff = audioTrack == null || audioTrack.id == 'no';
-                final rawName = audioTrackLabel(audioTrack);
-                final shortLabel =
-                    (!isAudioOff && rawName.isNotEmpty && rawName != 'None')
-                    ? _shortTrackLabel(rawName)
-                    : '';
-                final hasMultipleAudios =
-                    _player.state.tracks.audio.length > 1 ||
-                    widget.videos.any((v) => (v.audios?.length ?? 0) > 1);
-
-                if (!hasMultipleAudios && shortLabel.isEmpty) {
-                  return const SizedBox.shrink();
-                }
-
-                return PlayerPillButton(
-                  icon: Icons.audiotrack_outlined,
-                  label: shortLabel.isNotEmpty ? shortLabel : null,
-                  tooltip: context.l10n.video_audio,
-                  isCompact: isMobile,
-                  onTap: () => _openPlayerSettings(
-                    context,
-                    initialIndex: _audioSectionIndex,
-                  ),
-                );
-              },
-            ),
-          ),
-        ),
-
-        // Playback speed pill
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.5),
-          child: Builder(
-            builder: (context) => ValueListenableBuilder<double>(
-              valueListenable: _playbackSpeed,
-              builder: (context, speed, _) => PlayerPillButton(
-                icon: Icons.speed,
-                label: '${speed}x',
-                tooltip: context.l10n.playback_speed,
-                isCompact: isMobile,
-                onTap: () => _openPlayerSettings(
-                  context,
-                  initialIndex: _speedSectionIndex,
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        // Fit screen pill
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.5),
-          child: ValueListenableBuilder<BoxFit>(
-            valueListenable: _fit,
-            builder: (context, fit, _) => PlayerPillButton(
-              icon: Icons.fit_screen_outlined,
-              label: _fitShortLabel(fit),
-              tooltip: 'Fit screen',
-              isCompact: isMobile,
-              onTap: () => _changeFitLabel(ref),
-            ),
-          ),
-        ),
-
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 2.5),
-          child: Builder(
-            builder: (btnContext) => PlayerPillButton(
-              icon: Icons.video_settings,
-              tooltip: context.l10n.settings,
-              isCompact: isMobile,
-              onTap: () => _openPlayerSettings(btnContext),
-            ),
-          ),
-        ),
-
-        if (!isTv)
-          Consumer(
-            builder: (context, ref, _) {
-              final isFullscreen = ref.watch(fullscreenProvider);
-              return Padding(
-                padding: const EdgeInsets.only(left: 2.5, right: 5),
-                child: PlayerPillButton(
-                  icon: isFullscreen ? Icons.fullscreen_exit : Icons.fullscreen,
-                  tooltip: context.l10n.fullscreen,
-                  isCompact: isMobile,
-                  onTap: () async {
-                    if (isDesktop) {
-                      final isFullScreen = await setFullScreen(
-                        value: !isFullscreen,
-                      );
-                      ref.read(fullscreenProvider.notifier).state =
-                          isFullScreen;
-                      widget.desktopFullScreenPlayer.call(isFullScreen);
-                    } else {
-                      _setLandscapeMode(!isFullscreen);
-                      ref.read(fullscreenProvider.notifier).state =
-                          !isFullscreen;
-                      widget.desktopFullScreenPlayer.call(!isFullscreen);
-                    }
-                  },
-                ),
-              );
-            },
-          ),
-      ],
-    );
+  Future<void> _toggleFullscreen(bool isFullscreen) async {
+    if (isDesktop) {
+      final isFullScreen = await setFullScreen(value: !isFullscreen);
+      ref.read(fullscreenProvider.notifier).state = isFullScreen;
+      widget.desktopFullScreenPlayer.call(isFullScreen);
+    } else {
+      _setLandscapeMode(!isFullscreen);
+      ref.read(fullscreenProvider.notifier).state = !isFullscreen;
+      widget.desktopFullScreenPlayer.call(!isFullscreen);
+    }
   }
 
   Widget _topButtonBar(BuildContext context) {
-    final fullScreen = ref.watch(fullscreenProvider);
-    return Padding(
-      padding: EdgeInsets.only(
-        top: !isDesktop && !fullScreen ? MediaQuery.of(context).padding.top : 0,
-      ),
-      child: Row(
-        children: [
-          BackButton(color: Colors.white, onPressed: _goBackToDetail),
-          Flexible(
-            child: ListTile(
-              dense: true,
-              title: Text(
-                widget.episode.manga.value?.name ?? '',
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
+    final compactPortrait = _usesCompactPortraitControls(context);
+
+    Widget autoplayButton({bool portrait = false}) {
+      return Consumer(
+        builder: (context, ref, _) {
+          final autoPlay = ref.watch(autoPlayNextEpisodeProvider);
+          return Tooltip(
+            message: autoPlay
+                ? 'Autoplay next episode: on'
+                : 'Autoplay next episode: off',
+            child: InkWell(
+              borderRadius: BorderRadius.circular(20),
+              onTap: () =>
+                  ref.read(autoPlayNextEpisodeProvider.notifier).toggle(),
+              child: Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: portrait ? 0 : 8,
+                  vertical: portrait ? 10 : 8,
                 ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              subtitle: Text(
-                widget.episode.name ?? '',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w400,
-                  color: Colors.white.withValues(alpha: 0.7),
+                child: AutoplaySwitch(
+                  on: autoPlay,
+                  accent: Theme.of(context).colorScheme.primary,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
-          ),
-          Row(
-            children: [
-              Consumer(
-                builder: (context, ref, _) {
-                  final autoPlay = ref.watch(autoPlayNextEpisodeProvider);
-                  // Same drawn play/pause switch as the TV player, for a
-                  // consistent autoplay toggle across all players.
-                  return Tooltip(
-                    message: autoPlay
-                        ? 'Autoplay next episode: on'
-                        : 'Autoplay next episode: off',
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(20),
-                      onTap: () => ref
-                          .read(autoPlayNextEpisodeProvider.notifier)
-                          .toggle(),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 8,
-                        ),
-                        child: AutoplaySwitch(
-                          on: autoPlay,
-                          accent: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
-                    ),
-                  );
-                },
+          );
+        },
+      );
+    }
+
+    Widget episodesButton() {
+      return btnToShowChapterListDialog(
+        context,
+        context.l10n.episodes,
+        widget.episode,
+        onChanged: (v) {
+          if (v) {
+            _player.play();
+          } else {
+            _player.pause();
+          }
+        },
+        iconColor: Colors.white,
+      );
+    }
+
+    Widget shareButton() {
+      return btnToShowShareScreenshot(
+        widget.episode,
+        onChanged: (v) {
+          if (v) {
+            _player.play();
+          } else {
+            _player.pause();
+          }
+        },
+      );
+    }
+
+    final title = ListTile(
+      dense: true,
+      contentPadding: compactPortrait ? EdgeInsets.zero : null,
+      title: Text(
+        widget.episode.manga.value?.name ?? '',
+        style: const TextStyle(
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        widget.episode.name ?? '',
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w400,
+          color: Colors.white.withValues(alpha: 0.7),
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
+    );
+
+    return MobilePlayerTopSafeArea(
+      isDesktop: isDesktop,
+      child: MobilePlayerTopControlsLayout(
+        compactPortrait: compactPortrait,
+        backButton: BackButton(color: Colors.white, onPressed: _goBackToDetail),
+        title: title,
+        wideActions: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            autoplayButton(),
+            if (supportsAlwaysOnTop)
+              IconButton(
+                icon: Icon(
+                  alwaysOnTop ? Icons.push_pin : Icons.push_pin_outlined,
+                  color: Colors.white,
+                ),
+                onPressed: toggleAlwaysOnTop,
               ),
-              if (_supportAlwaysOnTop())
-                IconButton(
-                  icon: Icon(
-                    _alwaysOnTop ? Icons.push_pin : Icons.push_pin_outlined,
+            episodesButton(),
+            shareButton(),
+          ],
+        ),
+        portraitActions: MobilePlayerPortraitActionTheme(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              KeyedSubtree(
+                key: const ValueKey('mobile-player-portrait-autoplay'),
+                child: autoplayButton(portrait: true),
+              ),
+              KeyedSubtree(
+                key: const ValueKey('mobile-player-portrait-episodes'),
+                child: episodesButton(),
+              ),
+              Builder(
+                builder: (buttonContext) => IconButton(
+                  key: const ValueKey('mobile-player-portrait-subtitles'),
+                  tooltip: context.l10n.video_subtitle,
+                  onPressed: () => _openPlayerSettings(
+                    buttonContext,
+                    initialIndex: _subtitleSectionIndex,
+                  ),
+                  icon: const Icon(
+                    Icons.closed_caption_outlined,
                     color: Colors.white,
                   ),
-                  onPressed: () {
-                    setState(() => _alwaysOnTop = !_alwaysOnTop);
-                    windowManager.setAlwaysOnTop(_alwaysOnTop);
-                  },
                 ),
-              btnToShowChapterListDialog(
-                context,
-                context.l10n.episodes,
-                widget.episode,
-                onChanged: (v) {
-                  if (v) {
-                    _player.play();
-                  } else {
-                    _player.pause();
-                  }
-                },
-                iconColor: Colors.white,
               ),
-              btnToShowShareScreenshot(
-                widget.episode,
-                onChanged: (v) {
-                  if (v) {
-                    _player.play();
-                  } else {
-                    _player.pause();
-                  }
-                },
+              Builder(
+                builder: (buttonContext) => IconButton(
+                  key: const ValueKey('mobile-player-portrait-settings'),
+                  tooltip: context.l10n.settings,
+                  onPressed: () => _openPlayerSettings(buttonContext),
+                  icon: const Icon(
+                    Icons.settings_outlined,
+                    color: Colors.white,
+                  ),
+                ),
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -2927,9 +2769,6 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
                     bottomButtonBarWidget: _mobileBottomButtonBar(context),
                     streamController: _streamController,
                     revealControls: _revealControls,
-                    doubleSpeed: (value) {
-                      _isDoubleSpeed.value = value ?? false;
-                    },
                     chapterMarks: _chapterMarks,
                     isLocked: _isLocked,
                   ),
@@ -3055,161 +2894,85 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     );
   }
 
+  Future<void> _showShareScreenshotActions(
+    BuildContext sheetContext,
+    Chapter episode, {
+    void Function(bool)? onChanged,
+  }) async {
+    Future<Uint8List?> screenshot() => _player.screenshot(
+      format: "image/png",
+      includeLibassSubtitles: _includeSubtitles,
+    );
+    onChanged?.call(false);
+    final name =
+        "${episode.manga.value!.name} ${episode.name} - ${_currentPosition.value.toString()}"
+            .replaceAll(RegExp(r'[^a-zA-Z0-9 .()\-\s]'), '_');
+    await showModalBottomSheet(
+      context: sheetContext,
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.sizeOf(sheetContext).width,
+      ),
+      builder: (context) => ImageActionsSheet(
+        onSetCover: (context) async {
+          final imageBytes = await screenshot();
+          if (!context.mounted) return;
+          final confirmed = await confirmUseAsMangaCover(context);
+          if (!confirmed || !context.mounted) return;
+          await applyMangaCover(context, episode.manga.value!, imageBytes);
+          if (context.mounted) Navigator.pop(context);
+        },
+        onShare: (context) async {
+          final imageBytes = await screenshot();
+          if (context.mounted) {
+            final box = context.findRenderObject() as RenderBox?;
+            await shareOrCopy(
+              ShareParams(
+                files: [
+                  XFile.fromData(
+                    imageBytes!,
+                    name: name,
+                    mimeType: 'image/png',
+                  ),
+                ],
+                sharePositionOrigin: box!.localToGlobal(Offset.zero) & box.size,
+              ),
+              fallbackName: name,
+            );
+          }
+        },
+        onSave: (context) async {
+          final imageBytes = await screenshot();
+          final dir = await StorageProvider().getGalleryDirectory();
+          final file = File(path.join(dir!.path, "$name.png"));
+          file.writeAsBytesSync(imageBytes!);
+          if (context.mounted) {
+            botToast(context.l10n.picture_saved, second: 3);
+          }
+        },
+        // The sheet is its own route, so the player's setState alone
+        // would leave the switch showing the old value.
+        footer: StatefulBuilder(
+          builder: (context, setSheetState) => SwitchListTile(
+            onChanged: (value) {
+              setState(() => _includeSubtitles = value);
+              setSheetState(() {});
+            },
+            title: Text(context.l10n.include_subtitles),
+            value: _includeSubtitles,
+          ),
+        ),
+      ),
+    );
+    onChanged?.call(true);
+  }
+
   Widget btnToShowShareScreenshot(
     Chapter episode, {
     void Function(bool)? onChanged,
   }) {
     return IconButton(
-      onPressed: () async {
-        onChanged?.call(false);
-        Widget button(String label, IconData icon, Function() onPressed) =>
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(15),
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    shadowColor: Colors.transparent,
-                  ),
-                  onPressed: onPressed,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(4),
-                        child: Icon(icon),
-                      ),
-                      Text(label),
-                    ],
-                  ),
-                ),
-              ),
-            );
-        final name =
-            "${episode.manga.value!.name} ${episode.name} - ${_currentPosition.value.toString()}"
-                .replaceAll(RegExp(r'[^a-zA-Z0-9 .()\-\s]'), '_');
-        await showModalBottomSheet(
-          context: context,
-          constraints: BoxConstraints(maxWidth: context.width(1)),
-          builder: (context) {
-            return SuperListView(
-              shrinkWrap: true,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
-                    ),
-                    color: context.themeData.scaffoldBackgroundColor,
-                  ),
-                  child: Column(
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Container(
-                          height: 7,
-                          width: 35,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(6),
-                            color: context.secondaryColor.withValues(
-                              alpha: 0.4,
-                            ),
-                          ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          button(
-                            context.l10n.set_as_cover,
-                            Icons.image_outlined,
-                            () async {
-                              final imageBytes = await _player.screenshot(
-                                format: "image/png",
-                                includeLibassSubtitles: _includeSubtitles,
-                              );
-                              if (!context.mounted) return;
-                              final confirmed = await confirmUseAsMangaCover(
-                                context,
-                              );
-                              if (!confirmed || !context.mounted) return;
-                              await applyMangaCover(
-                                context,
-                                episode.manga.value!,
-                                imageBytes,
-                              );
-                              if (context.mounted) Navigator.pop(context);
-                            },
-                          ),
-                          button(
-                            context.l10n.share,
-                            Icons.share_outlined,
-                            () async {
-                              final imageBytes = await _player.screenshot(
-                                format: "image/png",
-                                includeLibassSubtitles: _includeSubtitles,
-                              );
-                              if (context.mounted) {
-                                final box =
-                                    context.findRenderObject() as RenderBox?;
-                                await shareOrCopy(
-                                  ShareParams(
-                                    files: [
-                                      XFile.fromData(
-                                        imageBytes!,
-                                        name: name,
-                                        mimeType: 'image/png',
-                                      ),
-                                    ],
-                                    sharePositionOrigin:
-                                        box!.localToGlobal(Offset.zero) &
-                                        box.size,
-                                  ),
-                                  fallbackName: name,
-                                );
-                              }
-                            },
-                          ),
-                          button(
-                            context.l10n.save,
-                            Icons.save_outlined,
-                            () async {
-                              final imageBytes = await _player.screenshot(
-                                format: "image/png",
-                                includeLibassSubtitles: _includeSubtitles,
-                              );
-                              final dir = await StorageProvider()
-                                  .getGalleryDirectory();
-                              final file = File(
-                                path.join(dir!.path, "$name.png"),
-                              );
-                              file.writeAsBytesSync(imageBytes!);
-                              if (context.mounted) {
-                                botToast(context.l10n.picture_saved, second: 3);
-                              }
-                            },
-                          ),
-                        ],
-                      ),
-                      SwitchListTile(
-                        onChanged: (value) {
-                          setState(() {
-                            _includeSubtitles = value;
-                          });
-                        },
-                        title: Text(context.l10n.include_subtitles),
-                        value: _includeSubtitles,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-        onChanged?.call(true);
-      },
+      onPressed: () =>
+          _showShareScreenshotActions(context, episode, onChanged: onChanged),
       icon: Icon(Icons.adaptive.share, color: Colors.white),
     );
   }
@@ -3327,81 +3090,4 @@ mp.register_script_message('call_button_${button.id}_long', button${button.id}lo
     }
     return KeyEventResult.ignored;
   }
-}
-
-Widget seekIndicatorTextWidget(Duration duration, Duration currentPosition) {
-  final swipeDuration = duration.inSeconds;
-  return Builder(
-    builder: (ctx) {
-      final accent = ctx.primaryColor;
-      final colorScheme = Theme.of(ctx).colorScheme;
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
-        decoration: BoxDecoration(
-          color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.90),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: colorScheme.outlineVariant.withValues(alpha: 0.35),
-          ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              swipeDuration > 0
-                  ? "+${Duration(seconds: swipeDuration).label()}"
-                  : "-${Duration(seconds: swipeDuration).label()}",
-              style: TextStyle(
-                fontSize: 20.0,
-                color: accent,
-                fontWeight: FontWeight.w600,
-                fontFeatures: const [FontFeature.tabularFigures()],
-              ),
-            ),
-          ],
-        ),
-      );
-    },
-  );
-}
-
-mixin _AlwaysOnTopStateMixin<T extends StatefulWidget> on State<T> {
-  // The original alwaysOnTop state.
-  // This will be used to restore the original state when the widget disposed.
-  bool? _savedAlwaysOnTop;
-
-  bool _alwaysOnTop = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initAlwaysOnTop();
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-    _disposeAlwaysOnTop();
-  }
-
-  Future<void> _initAlwaysOnTop() async {
-    if (_supportAlwaysOnTop()) {
-      _savedAlwaysOnTop = await windowManager.isAlwaysOnTop();
-      if (mounted) {
-        setState(() => _alwaysOnTop = _savedAlwaysOnTop!);
-      }
-    }
-  }
-
-  Future<void> _disposeAlwaysOnTop() async {
-    if (_supportAlwaysOnTop()) {
-      if (_savedAlwaysOnTop != null) {
-        await windowManager.setAlwaysOnTop(_savedAlwaysOnTop!);
-      }
-    }
-  }
-
-  // Whether the platform support AlwaysOnTop feature.
-  bool _supportAlwaysOnTop() => !kIsWeb && isDesktop;
 }

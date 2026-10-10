@@ -13,6 +13,7 @@ import 'package:mangayomi/models/custom_button.dart';
 import 'package:mangayomi/models/download.dart';
 import 'package:mangayomi/models/update.dart';
 import 'package:mangayomi/models/history.dart';
+import 'package:mangayomi/utils/error_toast.dart';
 import 'package:mangayomi/models/manga.dart';
 import 'package:mangayomi/models/settings.dart';
 import 'package:mangayomi/models/source.dart';
@@ -25,6 +26,7 @@ import 'package:mangayomi/modules/more/data_and_storage/providers/proto/BackupMi
 import 'package:mangayomi/modules/more/data_and_storage/providers/kotatsu_backup.dart';
 import 'package:mangayomi/modules/more/settings/appearance/providers/blend_level_state_provider.dart';
 import 'package:mangayomi/modules/more/settings/appearance/providers/flex_scheme_color_state_provider.dart';
+import 'package:mangayomi/modules/more/settings/appearance/providers/floating_navigation_bar_state_provider.dart';
 import 'package:mangayomi/modules/more/settings/appearance/providers/pure_black_dark_mode_state_provider.dart';
 import 'package:mangayomi/modules/more/settings/appearance/providers/theme_mode_state_provider.dart';
 import 'package:mangayomi/modules/more/settings/browse/providers/browse_state_provider.dart';
@@ -46,11 +48,15 @@ import 'package:mangayomi/repositories/track_repository.dart';
 import 'package:mangayomi/repositories/update_repository.dart';
 import 'package:mangayomi/services/sync_server.dart';
 import 'package:mangayomi/utils/constant.dart';
-import 'package:mangayomi/utils/error_toast.dart';
 import 'package:protobuf/protobuf.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 part 'restore.g.dart';
 
+/// Restores the backup at [path], replacing or merging into the library.
+///
+/// Throws when the restore fails, and leaves reporting it to the caller: the
+/// restore flows announce the outcome themselves, so an error swallowed here
+/// used to be followed by their success message.
 @riverpod
 Future<void> doRestore(
   Ref ref, {
@@ -157,8 +163,6 @@ Future<void> doRestore(
     } else {
       showBotToast("Backup Type not supported!");
     }
-  } catch (e, s) {
-    toastError(e, stack: s, source: 'restore');
   } finally {
     if (!uploadStarted) {
       ref.read(restoreSyncGuardProvider.notifier).finish();
@@ -191,7 +195,8 @@ Future<void> _uploadToSyncServerIfConnected(
     if (success) {
       botToast(l10n.restore_sync_upload_success);
     }
-  } catch (e) {
+  } catch (e, s) {
+    recordError(e, stack: s, source: 'restore_sync_upload');
     botToast(
       "Backup restored, but couldn't push it to your sync server: $e. "
       "The server still has the old data until the next successful sync.",
@@ -957,6 +962,7 @@ void _invalidateCommonState(Ref ref) {
   ref.invalidate(blendLevelStateProvider);
   ref.invalidate(flexSchemeColorStateProvider);
   ref.invalidate(pureBlackDarkModeStateProvider);
+  ref.invalidate(floatingNavigationBarStateProvider);
   ref.invalidate(l10nLocaleStateProvider);
   ref.invalidate(navigationOrderStateProvider);
   ref.invalidate(hideItemsStateProvider);

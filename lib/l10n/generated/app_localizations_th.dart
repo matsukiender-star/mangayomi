@@ -1171,6 +1171,13 @@ class AppLocalizationsTh extends AppLocalizations {
       'จัดเรียงและปรับแต่งการนำทางแต่ละรายการตามความต้องการของคุณ';
 
   @override
+  String get floating_navigation_bar => 'Floating navigation bar';
+
+  @override
+  String get floating_navigation_bar_description =>
+      'Use a floating capsule instead of the standard attached navigation bar.';
+
+  @override
   String get full_screen_player => 'ใช้โหมดเต็มหน้าจอ';
 
   @override
@@ -1183,7 +1190,7 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String n_episodes(Object n) {
+  String n_episodes(int n) {
     return '$n ตอน';
   }
 
@@ -1987,6 +1994,13 @@ class AppLocalizationsTh extends AppLocalizations {
   String get add_repo => 'เพิ่มที่เก็บข้อมูล?';
 
   @override
+  String get add_repo_sources_to_add => 'Extension lists that will be added:';
+
+  @override
+  String get add_repo_warning =>
+      'Extensions from these repositories run inside the app. Only add repositories you trust.';
+
+  @override
   String get genre_search_library => 'ค้นหาประเภทในห้องสมุด';
 
   @override
@@ -2130,6 +2144,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get custom_buttons_startup => 'โค้ด lua (เมื่อเริ่มต้น)';
 
   @override
+  String get custom_buttons_add_warning =>
+      'This button runs the Lua code below in the video player, which can access your files and run programs. Only add it if you trust where this link came from.';
+
+  @override
   String n_days(Object n) {
     return '$n วัน';
   }
@@ -2238,10 +2256,60 @@ class AppLocalizationsTh extends AppLocalizations {
   String get watch_order => 'ลำดับการดู';
 
   @override
+  String get watch_order_role_current => 'Current';
+
+  @override
+  String get watch_order_role_previous => 'Previous';
+
+  @override
+  String get watch_order_role_next => 'Next';
+
+  @override
+  String get watch_order_source_release_order => 'Release order';
+
+  @override
+  String watch_order_source_community_list(String name, String author) {
+    return '$name by $author';
+  }
+
+  @override
+  String watch_order_source_official_collection(String name) {
+    return 'Official Trakt collection: $name';
+  }
+
+  @override
+  String watch_order_source_trakt_collection(String name) {
+    return 'Trakt collection: $name';
+  }
+
+  @override
+  String watch_order_source_seasons(String title) {
+    return 'Seasons for $title';
+  }
+
+  @override
+  String get watch_order_select_source => 'Order source';
+
+  @override
+  String watch_order_season(int number) {
+    return 'Season $number';
+  }
+
+  @override
+  String watch_order_episode(int number) {
+    return 'Episode $number';
+  }
+
+  @override
   String get sequels => 'ภาคต่อ';
 
   @override
   String get recommendations_similarity => 'ความคล้ายคลึง:';
+
+  @override
+  String recommendation_rating_accessibility(String rating) {
+    return 'Rating $rating';
+  }
 
   @override
   String get local_folder_structure => 'โครงสร้างของโฟลเดอร์ในเครื่อง';
@@ -2411,7 +2479,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get authenticating => 'กำลังยืนยันตัวตน...';
 
   @override
-  String get lock => 'Lock';
+  String get lock => 'ล็อก';
 
   @override
   String get unlock => 'ปลดล็อก';
@@ -3408,4 +3476,146 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get chapter_swipe_disabled => 'ปิดใช้งาน';
+
+  @override
+  String get update_errors => 'Update errors';
+
+  @override
+  String get no_update_errors => 'No update errors';
+
+  @override
+  String get clear_all => 'Clear all';
+
+  @override
+  String get dismiss => 'Dismiss';
+
+  @override
+  String get previous_episode => 'Previous episode';
+
+  @override
+  String get clear_logs => 'Clear logs';
+
+  @override
+  String get bold => 'Bold';
+
+  @override
+  String get italic => 'Italic';
+
+  @override
+  String get color_yellow => 'Yellow';
+
+  @override
+  String get color_cyan => 'Cyan';
+
+  @override
+  String get color_green => 'Green';
+
+  @override
+  String get color_orange => 'Orange';
+
+  @override
+  String get continue_watching => 'Continue Watching';
+
+  @override
+  String get search_your_anime => 'Search your anime';
+
+  @override
+  String get category => 'Category';
+
+  @override
+  String get hidden_categories => 'Hidden categories';
+
+  @override
+  String get new_category => 'New category';
+
+  @override
+  String get local => 'Local';
+
+  @override
+  String get tv_home_rows => 'Rows';
+
+  @override
+  String get genre_rows => 'Genre rows';
+
+  @override
+  String get share_backup_file => 'Share Mangayomi backup file';
+
+  @override
+  String get close => 'Close';
+
+  @override
+  String get migrate_source => 'Migrate source';
+
+  @override
+  String get cloudflare_bypass_proxy => 'Cloudflare bypass proxy';
+
+  @override
+  String get custom_doh_url => 'Custom DoH URL';
+
+  @override
+  String get custom_doh_url_helper => 'Must be an https DoH (JSON) endpoint';
+
+  @override
+  String get anime_only_tv_layout => 'Anime-only TV layout';
+
+  @override
+  String get anime_only_beta => 'Anime only (beta)';
+
+  @override
+  String get tv_home_beta => 'TV home (beta)';
+
+  @override
+  String get tv_player_beta => 'TV player (beta)';
+
+  @override
+  String get keyboard_shortcuts => 'Keyboard shortcuts';
+
+  @override
+  String get keyboard_shortcuts_info => 'Keys for the reader and the player';
+
+  @override
+  String get shortcut_next_page => 'Next page';
+
+  @override
+  String get shortcut_previous_page => 'Previous page';
+
+  @override
+  String get shortcut_toggle_menu => 'Show or hide the menu';
+
+  @override
+  String get shortcut_close_reader => 'Close the reader';
+
+  @override
+  String get shortcut_play_pause => 'Play or pause';
+
+  @override
+  String shortcut_seek_back(int seconds) {
+    return 'Back $seconds s';
+  }
+
+  @override
+  String shortcut_seek_forward(int seconds) {
+    return 'Forward $seconds s';
+  }
+
+  @override
+  String get shortcut_volume_up => 'Volume up';
+
+  @override
+  String get shortcut_volume_down => 'Volume down';
+
+  @override
+  String get shortcut_mute => 'Mute';
+
+  @override
+  String get shortcut_skip_intro => 'Skip intro';
+
+  @override
+  String get shortcut_exit_fullscreen => 'Exit fullscreen';
+
+  @override
+  String get shortcut_anime4k => 'Anime4K shaders (0 turns them off)';
+
+  @override
+  String get shortcut_show_controls => 'Show the controls';
 }

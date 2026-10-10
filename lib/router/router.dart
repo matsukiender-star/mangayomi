@@ -9,6 +9,7 @@ import 'package:mangayomi/models/source.dart';
 import 'package:mangayomi/models/track.dart';
 import 'package:mangayomi/models/track_preference.dart';
 import 'package:mangayomi/models/track_search.dart';
+import 'package:mangayomi/services/discovery/media_lookup_context.dart';
 import 'package:mangayomi/modules/anime/anime_player_view.dart';
 import 'package:mangayomi/modules/browse/extension/edit_code.dart';
 import 'package:mangayomi/modules/browse/extension/extension_detail.dart';
@@ -59,6 +60,7 @@ import 'package:mangayomi/modules/more/settings/appearance/appearance_screen.dar
 import 'package:mangayomi/modules/more/settings/browse/browse_screen.dart';
 import 'package:mangayomi/modules/more/settings/browse/extension_server_screen.dart';
 import 'package:mangayomi/modules/more/settings/general/general_screen.dart';
+import 'package:mangayomi/modules/more/settings/keyboard_shortcuts/keyboard_shortcuts_screen.dart';
 import 'package:mangayomi/modules/more/settings/reader/novel_reader_screen.dart';
 import 'package:mangayomi/modules/more/settings/reader/reader_screen.dart';
 import 'package:mangayomi/modules/more/settings/settings_screen.dart';
@@ -239,6 +241,10 @@ class RouterNotifier extends ChangeNotifier {
     _genericRoute(name: "general", child: const GeneralScreen()),
     _genericRoute(name: "readerMode", child: const ReaderScreen()),
     _genericRoute(name: "novelReaderMode", child: const NovelReaderScreen()),
+    _genericRoute(
+      name: "keyboardShortcuts",
+      child: const KeyboardShortcutsScreen(),
+    ),
     _genericRoute(name: "browseS", child: const BrowseSScreen()),
     _genericRoute(
       name: "extensionServer",
@@ -319,17 +325,14 @@ class RouterNotifier extends ChangeNotifier {
       name: "related",
       builder: (data) => RelatedScreen(name: data.$1, itemType: data.$2),
     ),
-    _genericRoute<(String, ItemType, AlgorithmWeights)>(
+    _genericRoute<(MediaLookupContext, AlgorithmWeights)>(
       name: "recommendations",
-      builder: (data) => RecommendationScreen(
-        name: data.$1,
-        itemType: data.$2,
-        algorithmWeights: data.$3,
-      ),
+      builder: (data) =>
+          RecommendationScreen(media: data.$1, algorithmWeights: data.$2),
     ),
-    _genericRoute<(String, Track?)>(
+    _genericRoute<(MediaLookupContext, Track?)>(
       name: "watchOrder",
-      builder: (data) => WatchOrderScreen(name: data.$1, track: data.$2),
+      builder: (data) => WatchOrderScreen(media: data.$1, track: data.$2),
     ),
   ];
 

@@ -2179,6 +2179,18 @@ abstract class AppLocalizations {
   /// **'Reorder and toggle each navigation to your needs.'**
   String get reorder_navigation_description;
 
+  /// No description provided for @floating_navigation_bar.
+  ///
+  /// In en, this message translates to:
+  /// **'Floating navigation bar'**
+  String get floating_navigation_bar;
+
+  /// No description provided for @floating_navigation_bar_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Use a floating capsule instead of the standard attached navigation bar.'**
+  String get floating_navigation_bar_description;
+
   /// No description provided for @full_screen_player.
   ///
   /// In en, this message translates to:
@@ -2200,8 +2212,8 @@ abstract class AppLocalizations {
   /// No description provided for @n_episodes.
   ///
   /// In en, this message translates to:
-  /// **'{n} episodes'**
-  String n_episodes(Object n);
+  /// **'{n, plural, =1 {1 episode} other {{n} episodes}}'**
+  String n_episodes(int n);
 
   /// No description provided for @missing_episodes.
   ///
@@ -3673,6 +3685,18 @@ abstract class AppLocalizations {
   /// **'Add Repository?'**
   String get add_repo;
 
+  /// No description provided for @add_repo_sources_to_add.
+  ///
+  /// In en, this message translates to:
+  /// **'Extension lists that will be added:'**
+  String get add_repo_sources_to_add;
+
+  /// No description provided for @add_repo_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'Extensions from these repositories run inside the app. Only add repositories you trust.'**
+  String get add_repo_warning;
+
   /// No description provided for @genre_search_library.
   ///
   /// In en, this message translates to:
@@ -3943,6 +3967,12 @@ abstract class AppLocalizations {
   /// **'lua code (on startup)'**
   String get custom_buttons_startup;
 
+  /// No description provided for @custom_buttons_add_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'This button runs the Lua code below in the video player, which can access your files and run programs. Only add it if you trust where this link came from.'**
+  String get custom_buttons_add_warning;
+
   /// No description provided for @n_days.
   ///
   /// In en, this message translates to:
@@ -4135,6 +4165,72 @@ abstract class AppLocalizations {
   /// **'Watch order'**
   String get watch_order;
 
+  /// Role label for the title currently being viewed in a watch order.
+  ///
+  /// In en, this message translates to:
+  /// **'Current'**
+  String get watch_order_role_current;
+
+  /// Role label for an earlier title in a watch order.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous'**
+  String get watch_order_role_previous;
+
+  /// Role label for a later title in a watch order.
+  ///
+  /// In en, this message translates to:
+  /// **'Next'**
+  String get watch_order_role_next;
+
+  /// Source label for a watch order based on release dates.
+  ///
+  /// In en, this message translates to:
+  /// **'Release order'**
+  String get watch_order_source_release_order;
+
+  /// Source label for a community-created Trakt list.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} by {author}'**
+  String watch_order_source_community_list(String name, String author);
+
+  /// Source label for an official Trakt collection.
+  ///
+  /// In en, this message translates to:
+  /// **'Official Trakt collection: {name}'**
+  String watch_order_source_official_collection(String name);
+
+  /// Source label for a Trakt collection when it is not marked as official.
+  ///
+  /// In en, this message translates to:
+  /// **'Trakt collection: {name}'**
+  String watch_order_source_trakt_collection(String name);
+
+  /// Fallback source label when the watch order contains a show's seasons.
+  ///
+  /// In en, this message translates to:
+  /// **'Seasons for {title}'**
+  String watch_order_source_seasons(String title);
+
+  /// Label for choosing among available watch-order sources.
+  ///
+  /// In en, this message translates to:
+  /// **'Order source'**
+  String get watch_order_select_source;
+
+  /// Season metadata shown in a watch order.
+  ///
+  /// In en, this message translates to:
+  /// **'Season {number}'**
+  String watch_order_season(int number);
+
+  /// Episode metadata shown in a watch order.
+  ///
+  /// In en, this message translates to:
+  /// **'Episode {number}'**
+  String watch_order_episode(int number);
+
   /// No description provided for @sequels.
   ///
   /// In en, this message translates to:
@@ -4146,6 +4242,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Similarity:'**
   String get recommendations_similarity;
+
+  /// Accessible label for a recommendation rating in the provider's display format.
+  ///
+  /// In en, this message translates to:
+  /// **'Rating {rating}'**
+  String recommendation_rating_accessibility(String rating);
 
   /// No description provided for @local_folder_structure.
   ///
@@ -6150,6 +6252,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Disabled'**
   String get chapter_swipe_disabled;
+
+  /// No description provided for @update_errors.
+  ///
+  /// In en, this message translates to:
+  /// **'Update errors'**
+  String get update_errors;
+
+  /// No description provided for @no_update_errors.
+  ///
+  /// In en, this message translates to:
+  /// **'No update errors'**
+  String get no_update_errors;
+
+  /// No description provided for @clear_all.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get clear_all;
+
+  /// No description provided for @dismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get dismiss;
+
+  /// No description provided for @previous_episode.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous episode'**
+  String get previous_episode;
+
+  /// No description provided for @clear_logs.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear logs'**
+  String get clear_logs;
+
+  /// No description provided for @bold.
+  ///
+  /// In en, this message translates to:
+  /// **'Bold'**
+  String get bold;
+
+  /// No description provided for @italic.
+  ///
+  /// In en, this message translates to:
+  /// **'Italic'**
+  String get italic;
+
+  /// No description provided for @color_yellow.
+  ///
+  /// In en, this message translates to:
+  /// **'Yellow'**
+  String get color_yellow;
+
+  /// No description provided for @color_cyan.
+  ///
+  /// In en, this message translates to:
+  /// **'Cyan'**
+  String get color_cyan;
+
+  /// No description provided for @color_green.
+  ///
+  /// In en, this message translates to:
+  /// **'Green'**
+  String get color_green;
+
+  /// No description provided for @color_orange.
+  ///
+  /// In en, this message translates to:
+  /// **'Orange'**
+  String get color_orange;
+
+  /// No description provided for @continue_watching.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue Watching'**
+  String get continue_watching;
+
+  /// No description provided for @search_your_anime.
+  ///
+  /// In en, this message translates to:
+  /// **'Search your anime'**
+  String get search_your_anime;
+
+  /// No description provided for @category.
+  ///
+  /// In en, this message translates to:
+  /// **'Category'**
+  String get category;
+
+  /// No description provided for @hidden_categories.
+  ///
+  /// In en, this message translates to:
+  /// **'Hidden categories'**
+  String get hidden_categories;
+
+  /// No description provided for @new_category.
+  ///
+  /// In en, this message translates to:
+  /// **'New category'**
+  String get new_category;
+
+  /// No description provided for @local.
+  ///
+  /// In en, this message translates to:
+  /// **'Local'**
+  String get local;
+
+  /// No description provided for @tv_home_rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Rows'**
+  String get tv_home_rows;
+
+  /// No description provided for @genre_rows.
+  ///
+  /// In en, this message translates to:
+  /// **'Genre rows'**
+  String get genre_rows;
+
+  /// No description provided for @share_backup_file.
+  ///
+  /// In en, this message translates to:
+  /// **'Share Mangayomi backup file'**
+  String get share_backup_file;
+
+  /// No description provided for @close.
+  ///
+  /// In en, this message translates to:
+  /// **'Close'**
+  String get close;
+
+  /// No description provided for @migrate_source.
+  ///
+  /// In en, this message translates to:
+  /// **'Migrate source'**
+  String get migrate_source;
+
+  /// No description provided for @cloudflare_bypass_proxy.
+  ///
+  /// In en, this message translates to:
+  /// **'Cloudflare bypass proxy'**
+  String get cloudflare_bypass_proxy;
+
+  /// No description provided for @custom_doh_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom DoH URL'**
+  String get custom_doh_url;
+
+  /// No description provided for @custom_doh_url_helper.
+  ///
+  /// In en, this message translates to:
+  /// **'Must be an https DoH (JSON) endpoint'**
+  String get custom_doh_url_helper;
+
+  /// No description provided for @anime_only_tv_layout.
+  ///
+  /// In en, this message translates to:
+  /// **'Anime-only TV layout'**
+  String get anime_only_tv_layout;
+
+  /// No description provided for @anime_only_beta.
+  ///
+  /// In en, this message translates to:
+  /// **'Anime only (beta)'**
+  String get anime_only_beta;
+
+  /// No description provided for @tv_home_beta.
+  ///
+  /// In en, this message translates to:
+  /// **'TV home (beta)'**
+  String get tv_home_beta;
+
+  /// No description provided for @tv_player_beta.
+  ///
+  /// In en, this message translates to:
+  /// **'TV player (beta)'**
+  String get tv_player_beta;
+
+  /// No description provided for @keyboard_shortcuts.
+  ///
+  /// In en, this message translates to:
+  /// **'Keyboard shortcuts'**
+  String get keyboard_shortcuts;
+
+  /// No description provided for @keyboard_shortcuts_info.
+  ///
+  /// In en, this message translates to:
+  /// **'Keys for the reader and the player'**
+  String get keyboard_shortcuts_info;
+
+  /// No description provided for @shortcut_next_page.
+  ///
+  /// In en, this message translates to:
+  /// **'Next page'**
+  String get shortcut_next_page;
+
+  /// No description provided for @shortcut_previous_page.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous page'**
+  String get shortcut_previous_page;
+
+  /// No description provided for @shortcut_toggle_menu.
+  ///
+  /// In en, this message translates to:
+  /// **'Show or hide the menu'**
+  String get shortcut_toggle_menu;
+
+  /// No description provided for @shortcut_close_reader.
+  ///
+  /// In en, this message translates to:
+  /// **'Close the reader'**
+  String get shortcut_close_reader;
+
+  /// No description provided for @shortcut_play_pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Play or pause'**
+  String get shortcut_play_pause;
+
+  /// No description provided for @shortcut_seek_back.
+  ///
+  /// In en, this message translates to:
+  /// **'Back {seconds} s'**
+  String shortcut_seek_back(int seconds);
+
+  /// No description provided for @shortcut_seek_forward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward {seconds} s'**
+  String shortcut_seek_forward(int seconds);
+
+  /// No description provided for @shortcut_volume_up.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume up'**
+  String get shortcut_volume_up;
+
+  /// No description provided for @shortcut_volume_down.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume down'**
+  String get shortcut_volume_down;
+
+  /// No description provided for @shortcut_mute.
+  ///
+  /// In en, this message translates to:
+  /// **'Mute'**
+  String get shortcut_mute;
+
+  /// No description provided for @shortcut_skip_intro.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip intro'**
+  String get shortcut_skip_intro;
+
+  /// No description provided for @shortcut_exit_fullscreen.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit fullscreen'**
+  String get shortcut_exit_fullscreen;
+
+  /// No description provided for @shortcut_anime4k.
+  ///
+  /// In en, this message translates to:
+  /// **'Anime4K shaders (0 turns them off)'**
+  String get shortcut_anime4k;
+
+  /// No description provided for @shortcut_show_controls.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the controls'**
+  String get shortcut_show_controls;
 }
 
 class _AppLocalizationsDelegate

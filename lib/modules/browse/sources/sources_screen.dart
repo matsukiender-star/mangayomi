@@ -84,12 +84,13 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
   Widget build(BuildContext context) {
     final l10n = l10nLocalizations(context)!;
     final sourcesStream = ref.watch(getSourcesStreamProvider(widget.itemType));
+    final tvHorizontalInset = tvHorizontalSafeInset(context);
 
     return Padding(
       padding: EdgeInsets.only(
         top: 10,
-        left: isTv ? 8 : 0,
-        right: isTv ? 8 : 0,
+        left: tvHorizontalInset,
+        right: tvHorizontalInset,
       ),
       child: sourcesStream.when(
         data: (snapshotData) {
@@ -272,6 +273,12 @@ class _SourcesScreenState extends ConsumerState<SourcesScreen> {
                       ),
                     ],
                   ),
+                ),
+                // Trailing room rather than padding around the viewport, so rows
+                // scroll under the translucent bar, which is what gives it
+                // something to blur, and only the last one clears it.
+                SliverToBoxAdapter(
+                  child: SizedBox(height: pageBottomInsets(context).bottom),
                 ),
               ],
             ),
