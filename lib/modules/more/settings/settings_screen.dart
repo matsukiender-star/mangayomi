@@ -64,6 +64,12 @@ class SettingsScreen extends StatelessWidget {
               },
             ),
             ListTileWidget(
+              title: l10n.keyboard_shortcuts,
+              subtitle: l10n.keyboard_shortcuts_info,
+              icon: Icons.keyboard_outlined,
+              onTap: () => context.push('/keyboardShortcuts'),
+            ),
+            ListTileWidget(
               title: l10n.downloads,
               icon: Icons.download_outlined,
               onTap: () => context.push('/downloads'),
