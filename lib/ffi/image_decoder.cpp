@@ -1256,12 +1256,17 @@ static bool load_libjpeg_symbols() {
         { NULL, 0 }
     };
 
-    for (int i = 0; candidates[i].name != NULL; i++) {
-        void* handle = dlopen(candidates[i].name, RTLD_LAZY | RTLD_LOCAL);
-        if (handle) {
-            s_libjpeg_handle = handle;
-            s_libjpeg_version = candidates[i].version;
-            break;
+    // jpeg_CreateDecompress rejects a struct size from other headers, so try
+    // the library matching the headers we were built with first.
+    for (int pass = 0; pass < 2 && !s_libjpeg_handle; pass++) {
+        for (int i = 0; candidates[i].name != NULL; i++) {
+            if ((candidates[i].version == JPEG_LIB_VERSION) != (pass == 0)) continue;
+            void* handle = dlopen(candidates[i].name, RTLD_LAZY | RTLD_LOCAL);
+            if (handle) {
+                s_libjpeg_handle = handle;
+                s_libjpeg_version = candidates[i].version;
+                break;
+            }
         }
     }
 

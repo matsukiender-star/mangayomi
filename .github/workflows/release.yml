@@ -13,241 +13,6 @@ env:
   ZSIGN_VERSION: "0.7"
 
 jobs:
-  build-and-release-android-apks:
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout branch
-        uses: actions/checkout@v4
-
-      - name: setup flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Java toolchain (Only Android target)
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-        env:
-          JAVA_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
-
-      - name: Setup Gradle properties for CI
-        run: |
-          echo "org.gradle.jvmargs=-Xmx4096M -XX:MaxMetaspaceSize=512m -XX:+UseG1GC" >> android/gradle.properties
-          echo "org.gradle.parallel=true" >> android/gradle.properties
-          echo "org.gradle.daemon=false" >> android/gradle.properties
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.18.1"
-
-      - name: Setup ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-
-      - name: Setup Android keystore
-        run: |
-          echo "${{ secrets.SIGNING_KEY_STORE_BASE64 }}" | base64 -di > android/app/upload-keystore.jks
-          echo "${{ secrets.SIGNING_KEY_PROPERTIES }}" > android/key.properties
-
-      - name: flutter pub get
-        run: flutter pub get
-
-      - name: build android apks (split per ABI)
-        run: |
-          export GRADLE_OPTS="-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
-          flutter build apk --release --split-per-abi --verbose
-          cd build/app/outputs/flutter-apk
-          mv app-arm64-v8a-release.apk Mangayomi-${{ github.ref_name }}-android-arm64-v8a.apk
-          mv app-armeabi-v7a-release.apk Mangayomi-${{ github.ref_name }}-android-armeabi-v7a.apk
-          mv app-x86_64-release.apk Mangayomi-${{ github.ref_name }}-android-x86_64.apk
-
-      - name: upload artifact android apks
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mangayomi-${{ github.ref_name }}-android
-          path: "build/app/outputs/flutter-apk/Mangayomi-*.apk"
-
-  # Dedicated Android TV build: same app, but with TV branding swapped in (a
-  # TV launcher icon + banner). Fire TV shows the square launcher icon for
-  # sideloaded apps and doesn't reliably honour the `-television` resource
-  # qualifier, so the icon is overwritten directly here rather than via a
-  # qualifier. Produces separate Mangayomi-<tag>-android-tv-*.apk artifacts.
-  build-and-release-android-tv:
-    permissions:
-      contents: write
-    runs-on: ubuntu-latest
-    steps:
-      - name: checkout branch
-        uses: actions/checkout@v4
-
-      - name: setup flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Setup Java toolchain (Only Android target)
-        uses: actions/setup-java@v4
-        with:
-          distribution: "temurin"
-          java-version: "17"
-        env:
-          JAVA_OPTS: "-Xmx4096m -XX:MaxMetaspaceSize=512m"
-
-      - name: Setup Gradle properties for CI
-        run: |
-          echo "org.gradle.jvmargs=-Xmx4096M -XX:MaxMetaspaceSize=512m -XX:+UseG1GC" >> android/gradle.properties
-          echo "org.gradle.parallel=true" >> android/gradle.properties
-          echo "org.gradle.daemon=false" >> android/gradle.properties
-
-      - name: Setup cmake
-        uses: jwlawson/actions-setup-cmake@v2
-        with:
-          cmake-version: "3.18.1"
-
-      - name: Setup ninja
-        uses: seanmiddleditch/gha-setup-ninja@master
-
-      - name: Install the CLI tool
-        run: cargo install 'flutter_rust_bridge_codegen'
-
-      # Overwrite the default launcher icon (and banner) with the TV variants
-      # from android/tv_res before building. The leanback banner is declared in
-      # the manifest by the Android TV support work.
-      - name: Apply TV branding
-        run: |
-          for d in mdpi hdpi xhdpi xxhdpi xxxhdpi; do
-            cp -f "android/tv_res/mipmap-$d/launcher_icon.png" \
-                  "android/app/src/main/res/mipmap-$d/launcher_icon.png"
-          done
-          cp -f android/tv_res/drawable-xhdpi/tv_banner.png \
-                android/app/src/main/res/drawable-xhdpi/tv_banner.png || true
-
-      - name: Setup Android keystore
-        run: |
-          echo "${{ secrets.SIGNING_KEY_STORE_BASE64 }}" | base64 -di > android/app/upload-keystore.jks
-          echo "${{ secrets.SIGNING_KEY_PROPERTIES }}" > android/key.properties
-
-      - name: flutter pub get
-        run: flutter pub get
-
-      - name: build android tv apks (split per ABI)
-        run: |
-          export GRADLE_OPTS="-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+UseG1GC"
-          flutter build apk --release --split-per-abi --verbose
-          cd build/app/outputs/flutter-apk
-          mv app-arm64-v8a-release.apk Mangayomi-${{ github.ref_name }}-android-tv-arm64-v8a.apk
-          mv app-armeabi-v7a-release.apk Mangayomi-${{ github.ref_name }}-android-tv-armeabi-v7a.apk
-          mv app-x86_64-release.apk Mangayomi-${{ github.ref_name }}-android-tv-x86_64.apk
-
-      - name: upload artifact android tv apks
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mangayomi-${{ github.ref_name }}-android-tv
-          path: "build/app/outputs/flutter-apk/Mangayomi-*android-tv*.apk"
-
-  build-and-release-ios-ipa:
-    permissions:
-      contents: write
-    runs-on: macos-26
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-          architecture: x64
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: aarch64-apple-ios,x86_64-apple-ios
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-        with:
-          workspaces: rust
-          cache-on-failure: true
-
-      - name: Print Xcode version
-        run: xcodebuild -version
-
-      - name: Flutter pub get
-        run: flutter pub get
-
-      - name: Setup signing environment
-        env:
-          P12_BASE64: ${{ secrets.P12_CERTIFICATE }}
-          PROVISIONING_PROFILE_BASE64: ${{ secrets.PROVISIONING_PROFILE }}
-        run: |
-          echo "$P12_BASE64" | base64 -d > certificate.p12
-          echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > profile.mobileprovision
-          curl -L -o zsign.zip "https://github.com/zhlynn/zsign/releases/download/v${{ env.ZSIGN_VERSION }}/zsign-v${{ env.ZSIGN_VERSION }}-macos-x64.zip"
-          unzip zsign.zip
-          chmod +x zsign || chmod +x zsign-*
-
-      - name: Build iOS
-        env:
-          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
-        run: |
-          flutter build ios --release --no-codesign
-          mkdir -p build/ios/iphoneos/Payload
-          mv build/ios/iphoneos/Runner.app build/ios/iphoneos/Payload/
-          ./zsign -f -k ./certificate.p12 -p "$P12_PASSWORD" -m ./profile.mobileprovision ./build/ios/iphoneos/Payload/Runner.app
-          cd build/ios/iphoneos
-          zip -r Mangayomi-${{ github.ref_name }}-ios.ipa Payload
-
-      - name: Upload artifact iOS IPA
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mangayomi-${{ github.ref_name }}-ios
-          path: "build/ios/iphoneos/Mangayomi-*.ipa"
-
-  build-and-release-macos-dmg:
-    permissions:
-      contents: write
-    runs-on: macos-latest
-    steps:
-      - name: checkout branch
-        uses: actions/checkout@v4
-
-      - name: setup flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: "stable"
-
-      - name: Setup Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: flutter pub get
-        run: flutter pub get
-
-      - name: build macos
-        run: |
-          cd macos
-          pod update
-          cd ..
-          flutter build macos --release --verbose
-          brew install create-dmg
-          create-dmg --volname Mangayomi-${{ github.ref_name }}-macos --window-pos 200 120 --window-size 800 450 --icon-size 100 --app-drop-link 600 185 Mangayomi-${{ github.ref_name }}-macos.dmg build/macos/Build/Products/Release/Mangayomi.app
-
-      - name: upload artifact macos dmg
-        uses: actions/upload-artifact@v4
-        with:
-          name: Mangayomi-${{ github.ref_name }}-macos
-          path: "/Users/runner/work/mangayomi/mangayomi/*.dmg"
-
   build-and-release-windows-exe_zip:
     permissions:
       contents: write
@@ -355,6 +120,9 @@ jobs:
           # link-time scan never bundles it and AVIF decoding fails on hosts
           # without libavif. Copy it and its closure into the AppDir.
           avif="$(ldconfig -p | awk '/libavif\.so\.16 /{print $NF; exit}')"
+          # Same for libjpeg: the decoder is built against libjpeg 8 headers,
+          # which libjpeg.so.62 (Fedora, Arch...) rejects.
+          jpeg="$(ldconfig -p | awk '/libjpeg\.so\.8 /{print $NF; exit}')"
           if [ -n "$avif" ]; then
             copy_avif() {
               local lib="$1" base
@@ -369,6 +137,9 @@ jobs:
               done < <(ldd "$lib" 2>/dev/null | awk '/=> \//{print $3}')
             }
             copy_avif "$avif"
+          fi
+          if [ -n "$jpeg" ]; then
+            copy_avif "$jpeg"
           fi
           # Scan AppDir/usr/bin/lib for existing libraries to exclude them from linuxdeploy packaging
           EXCLUDE_LIBS=$(find AppDir/usr/bin/lib -type f -name "*.so*" -exec basename {} \; | sort -u)
@@ -512,10 +283,6 @@ jobs:
       contents: write
     runs-on: ubuntu-latest
     needs:
-      - build-and-release-android-apks
-      - build-and-release-android-tv
-      - build-and-release-ios-ipa
-      - build-and-release-macos-dmg
       - build-and-release-windows-exe_zip
       - build-and-release-linux-zip_AppImage_RPM
       - build-and-release-linux-deb
@@ -536,9 +303,7 @@ jobs:
         uses: ncipollo/release-action@v1
         with:
           artifacts: "release-assets/*"
-          generateReleaseNotes: true
+          generateReleaseNotes: false
+          prerelease: true
+          draft: true
           allowUpdates: true
-
-  ios-source-build:
-    needs: publish-release
-    uses: ./.github/workflows/update_sideloading_source.yml
