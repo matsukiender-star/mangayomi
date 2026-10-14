@@ -4,13 +4,17 @@ on:
   push:
     tags:
       - v*
+  pull_request:
+    branches:
+      - main
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref_name }}
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
   cancel-in-progress: true
 
 env:
   ZSIGN_VERSION: "0.7"
+  RELEASE_TAG: v0.9.9-matsu.1
 
 jobs:
   build-and-release-windows-exe_zip:
@@ -47,20 +51,20 @@ jobs:
           # Rename and move installer exe
           $installer = Get-ChildItem -Path "build/windows/x64/installer/Release/*.exe" | Select-Object -First 1
           if ($installer) {
-            Move-Item -Path $installer.FullName -Destination "dist/Mangayomi-${{ github.ref_name }}-windows.exe" -Force
+            Move-Item -Path $installer.FullName -Destination "dist/Mangayomi-${{ env.RELEASE_TAG }}-windows.exe" -Force
           } else {
             Write-Error "Installer executable not found in build/windows/x64/installer/Release/"
           }
 
           # Create zip of runner release
-          $tempZip = Join-Path $env:RUNNER_TEMP "Mangayomi-${{ github.ref_name }}-windows.zip"
+          $tempZip = Join-Path $env:RUNNER_TEMP "Mangayomi-${{ env.RELEASE_TAG }}-windows.zip"
           Compress-Archive -Path "build/windows/x64/runner/Release/*" -DestinationPath $tempZip -Force
-          Move-Item -Path $tempZip -Destination "dist/Mangayomi-${{ github.ref_name }}-windows.zip" -Force
+          Move-Item -Path $tempZip -Destination "dist/Mangayomi-${{ env.RELEASE_TAG }}-windows.zip" -Force
 
       - name: upload artifact windows exe_zip
         uses: actions/upload-artifact@v4
         with:
-          name: Mangayomi-${{ github.ref_name }}-windows-zip
+          name: Mangayomi-${{ env.RELEASE_TAG }}-windows-zip
           path: dist/Mangayomi-*
           if-no-files-found: error
 
@@ -97,7 +101,7 @@ jobs:
         uses: thedoctor0/zip-release@main
         with:
           type: "zip"
-          filename: Mangayomi-${{ github.ref_name }}-linux.zip
+          filename: Mangayomi-${{ env.RELEASE_TAG }}-linux.zip
           directory: build/linux/x64/release/bundle
 
       - name: Create AppImage
@@ -167,7 +171,7 @@ jobs:
             --executable AppDir/usr/bin/mangayomi \
             $EXCLUDE_ARGS \
             --output appimage
-          mv $(find . -type f -name "*.AppImage") build/linux/x64/release/Mangayomi-${{ github.ref_name }}-linux.AppImage
+          mv $(find . -type f -name "*.AppImage") build/linux/x64/release/Mangayomi-${{ env.RELEASE_TAG }}-linux.AppImage
 
       - name: Create RPM Package
         run: |
@@ -215,12 +219,12 @@ jobs:
           EOF
 
           rpmbuild --define "_topdir $(pwd)/rpm_build" -ba rpm_build/SPECS/mangayomi.spec
-          mv rpm_build/RPMS/x86_64/*.rpm build/linux/x64/release/Mangayomi-${{ github.ref_name }}-linux.rpm
+          mv rpm_build/RPMS/x86_64/*.rpm build/linux/x64/release/Mangayomi-${{ env.RELEASE_TAG }}-linux.rpm
 
       - name: upload artifact linux zip
         uses: actions/upload-artifact@v4
         with:
-          name: Mangayomi-${{ github.ref_name }}-linux-zip
+          name: Mangayomi-${{ env.RELEASE_TAG }}-linux-zip
           path: |
             build/linux/x64/release/Mangayomi-*.zip
             build/linux/x64/release/Mangayomi-*.AppImage
@@ -270,12 +274,12 @@ jobs:
           # Set correct permissions
           chmod 644 extracted_deb/usr/share/applications/mangayomi.desktop
           # Repack the .deb
-          fakeroot dpkg-deb -b extracted_deb dist/Mangayomi-${{ github.ref_name }}-linux.deb
+          fakeroot dpkg-deb -b extracted_deb dist/Mangayomi-${{ env.RELEASE_TAG }}-linux.deb
 
       - name: upload artifact linux deb
         uses: actions/upload-artifact@v4
         with:
-          name: Mangayomi-${{ github.ref_name }}-linux-deb
+          name: Mangayomi-${{ env.RELEASE_TAG }}-linux-deb
           path: dist/Mangayomi-*.deb
 
   publish-release:
@@ -307,3 +311,5 @@ jobs:
           prerelease: true
           draft: true
           allowUpdates: true
+          tag: ${{ env.RELEASE_TAG }}
+          commit: ${{ github.event.pull_request.head.sha || github.sha }}
