@@ -57,10 +57,14 @@ Widget cachedNetworkImage({
   bool useCustomNetworkImage = true,
   Widget errorWidget = const Icon(Symbols.error_rounded, fill: 1, size: 50),
 }) {
+  final ImageProvider provider = useCustomNetworkImage
+      ? CustomExtendedNetworkImageProvider(imageUrl, headers: headers)
+      : ExtendedNetworkImageProvider(imageUrl, headers: headers);
   return ExtendedImage(
-    image: useCustomNetworkImage
-        ? CustomExtendedNetworkImageProvider(imageUrl, headers: headers)
-        : ExtendedNetworkImageProvider(imageUrl, headers: headers),
+    // Every caller shows a thumbnail. Decoding at the source resolution ran
+    // Android out of memory in global search, where the cards of many
+    // sources are kept alive at once.
+    image: ExtendedResizeImage(provider, maxBytes: _coverMaxBytes),
     width: width,
     height: height,
     fit: fit,
